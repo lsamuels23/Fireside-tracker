@@ -24,7 +24,7 @@
   .card-title { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; color: #999; text-transform: uppercase; margin-bottom: 16px; }
 
   /* Task form */
-  .task-form { display: grid; grid-template-columns: 1fr 1fr 1fr 1.4fr 1fr 165px auto; gap: 10px; align-items: start; }
+  .task-form { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1.4fr 1fr 165px auto; gap: 10px; align-items: start; }
   .task-form .hint { grid-column: 1/-1; font-size: 12px; color: #aaa; margin-top: -4px; }
   .form-field { display: flex; flex-direction: column; gap: 4px; }
   .form-field label { font-size: 11px; color: #888; font-weight: 500; }
@@ -187,6 +187,11 @@
         <datalist id="trade-list"></datalist>
       </div>
       <div class="form-field">
+        <label>Location</label>
+        <input list="location-list" id="tf-location" placeholder="Type or pick..." autocomplete="off">
+        <datalist id="location-list"></datalist>
+      </div>
+      <div class="form-field">
         <label>Task</label>
         <input type="text" id="tf-task" placeholder="What needs doing...">
       </div>
@@ -270,7 +275,7 @@
     </div>
     <div class="search-row">
       <span class="search-icon">🔍</span>
-      <input type="text" id="f-search" class="search-input" placeholder="Search tasks, jobs, types, trades, contacts…" autocomplete="off" oninput="renderTasks()">
+      <input type="text" id="f-search" class="search-input" placeholder="Search tasks, jobs, types, trades, locations, contacts…" autocomplete="off" oninput="renderTasks()">
       <button class="search-clear" id="search-clear" onclick="clearSearch()" title="Clear search">×</button>
     </div>
   </div>
@@ -287,6 +292,7 @@
           <th>Job</th>
           <th>Type</th>
           <th>Trade</th>
+          <th>Location</th>
           <th>Task</th>
           <th>Contact</th>
           <th>Due</th>
@@ -318,6 +324,10 @@
       <div class="form-field">
         <label>Trade</label>
         <input list="trade-list" id="e-trade" placeholder="Type or pick..." autocomplete="off">
+      </div>
+      <div class="form-field full">
+        <label>Location</label>
+        <input list="location-list" id="e-location" placeholder="Type or pick..." autocomplete="off">
       </div>
       <div class="form-field full">
         <label>Task</label>
@@ -507,6 +517,7 @@ async function init() {
       delete t.job;
     }
     if (!('type' in t)) t.type = '';
+    if (!('location' in t)) t.location = '';
     return t;
   });
   save('fs_tasks', tasks);
@@ -515,6 +526,7 @@ async function init() {
   populateContactDatalist();
   populateTradeDatalist();
   populateTypeDatalist();
+  populateLocationDatalist();
   populateJobFilter();
   populateTypeFilter();
   populateContactFilter();
@@ -524,7 +536,7 @@ async function init() {
   renderContacts();
   renderTradeList();
 
-  ['tf-job','tf-type','tf-trade','tf-task','tf-contact','tf-due'].forEach(id => {
+  ['tf-job','tf-type','tf-trade','tf-location','tf-task','tf-contact','tf-due'].forEach(id => {
     document.getElementById(id).addEventListener('keydown', e => { if(e.key==='Enter') addTask(); });
   });
 }
@@ -547,6 +559,12 @@ function populateTradeDatalist() {
 function populateTypeDatalist() {
   const dl = document.getElementById('type-list');
   dl.innerHTML = types.map(t => `<option value="${esc(t)}">`).join('');
+}
+
+function populateLocationDatalist() {
+  const seen = [...new Set(tasks.map(t => t.location).filter(Boolean))].sort();
+  document.getElementById('location-list').innerHTML =
+    seen.map(l => `<option value="${esc(l)}">`).join('');
 }
 
 function populateTypeFilter() {
@@ -704,6 +722,7 @@ document.addEventListener('click', () => {
 function addTask() {
   const type    = document.getElementById('tf-type').value.trim();
   const trade   = document.getElementById('tf-trade').value.trim();
+  const location= document.getElementById('tf-location').value.trim();
   const task    = document.getElementById('tf-task').value.trim();
   const contact = document.getElementById('tf-contact').value.trim();
   const due     = document.getElementById('tf-due').value;
@@ -712,20 +731,21 @@ function addTask() {
   const jobInp = document.getElementById('tf-job').value.trim();
   if (jobInp && !pendingJobs.includes(jobInp)) pendingJobs.push(jobInp);
 
-  if (!task && !pendingJobs.length && !contact && !trade && !type && !due) return;
+  if (!task && !pendingJobs.length && !contact && !trade && !type && !location && !due) return;
 
   if (trade) ensureTrade(trade);
   if (type)  ensureType(type);
-  tasks.unshift({ id: Date.now(), jobs: [...pendingJobs], type, trade, task, contact, due,
+  tasks.unshift({ id: Date.now(), jobs: [...pendingJobs], type, trade, location, task, contact, due,
     status: 'open', startedAt: null, completedAt: null,
     added: new Date().toISOString() });
   save('fs_tasks', tasks);
 
   pendingJobs = [];
   document.getElementById('job-tags-form').innerHTML = '';
-  ['tf-job','tf-type','tf-trade','tf-task','tf-contact','tf-due'].forEach(id => {
+  ['tf-job','tf-type','tf-trade','tf-location','tf-task','tf-contact','tf-due'].forEach(id => {
     document.getElementById(id).value = '';
   });
+  populateLocationDatalist();
   renderTasks();
 }
 
@@ -774,7 +794,7 @@ function daysTracked(t) {
 function matchesSearch(t, terms) {
   if (!terms.length) return true;
   const hay = [
-    t.task, t.type, t.trade, t.contact,
+    t.task, t.type, t.trade, t.location, t.contact,
     ...(t.jobs || [])
   ].filter(Boolean).join(' ').toLowerCase();
   return terms.every(term => hay.includes(term));
@@ -852,6 +872,7 @@ function renderTasks() {
       <td>${jobBadges}</td>
       <td>${t.type ? `<span style="font-size:12px;background:#fef3e0;color:#a15c00;border-radius:10px;padding:2px 9px;font-weight:600">${esc(t.type)}</span>` : '<span style="color:#ccc">—</span>'}</td>
       <td>${t.trade ? `<span style="font-size:12px;background:#f0f7ee;color:#2d6a4f;border-radius:10px;padding:2px 9px;font-weight:600">${esc(t.trade)}</span>` : '<span style="color:#ccc">—</span>'}</td>
+      <td>${t.location ? esc(t.location) : '<span style="color:#ccc">—</span>'}</td>
       <td>${esc(t.task)}</td>
       <td>${esc(t.contact) || '<span style="color:#ccc">—</span>'}</td>
       <td class="col-due ${overdue}">${t.due ? fmtDate(t.due) : '<span style="color:#ccc">—</span>'}</td>
@@ -1021,6 +1042,7 @@ function openEditModal(id) {
   document.getElementById('e-contact').value = t.contact || '';
   document.getElementById('e-type').value    = t.type || '';
   document.getElementById('e-trade').value   = t.trade || '';
+  document.getElementById('e-location').value= t.location || '';
   document.getElementById('e-due').value     = t.due || '';
   document.getElementById('e-job').value     = '';
   renderEditJobTags();
@@ -1080,10 +1102,12 @@ function saveEdit() {
   t.jobs    = [...editPendingJobs];
   t.type    = type;
   t.trade   = trade;
+  t.location= document.getElementById('e-location').value.trim();
   t.task    = document.getElementById('e-task').value.trim();
   t.contact = document.getElementById('e-contact').value.trim();
   t.due     = document.getElementById('e-due').value;
   save('fs_tasks', tasks);
+  populateLocationDatalist();
   closeEditModal();
   renderTasks();
 }
@@ -1125,6 +1149,7 @@ function exportPDF() {
       <td style="padding:6px 10px;border:1px solid #ccc;white-space:nowrap">${esc(jobs)}</td>
       <td style="padding:6px 10px;border:1px solid #ccc;white-space:nowrap">${esc(t.type)||'—'}</td>
       <td style="padding:6px 10px;border:1px solid #ccc;white-space:nowrap">${esc(t.trade)||'—'}</td>
+      <td style="padding:6px 10px;border:1px solid #ccc;white-space:nowrap">${esc(t.location)||'—'}</td>
       <td style="padding:6px 10px;border:1px solid #ccc">${esc(t.task)||'—'}</td>
       <td style="padding:6px 10px;border:1px solid #ccc;white-space:nowrap">${esc(t.contact)||'—'}</td>
       <td style="padding:6px 10px;border:1px solid #ccc;white-space:nowrap">${t.due ? fmtDate(t.due) : '—'}</td>
@@ -1148,7 +1173,7 @@ function exportPDF() {
   <table>
     <thead><tr>
       <th style="width:22px"></th>
-      <th>Job</th><th>Type</th><th>Trade</th><th>Task</th><th>Contact</th><th>Due</th><th>Status</th>
+      <th>Job</th><th>Type</th><th>Trade</th><th>Location</th><th>Task</th><th>Contact</th><th>Due</th><th>Status</th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>
