@@ -24,7 +24,7 @@
   .card-title { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; color: #999; text-transform: uppercase; margin-bottom: 16px; }
 
   /* Task form */
-  .task-form { display: grid; grid-template-columns: 1fr 1.4fr 1fr 1fr 180px auto; gap: 10px; align-items: start; }
+  .task-form { display: grid; grid-template-columns: 1fr 1fr 1fr 1.4fr 1fr 165px auto; gap: 10px; align-items: start; }
   .task-form .hint { grid-column: 1/-1; font-size: 12px; color: #aaa; margin-top: -4px; }
   .form-field { display: flex; flex-direction: column; gap: 4px; }
   .form-field label { font-size: 11px; color: #888; font-weight: 500; }
@@ -39,6 +39,16 @@
   .filters .form-field { min-width: 130px; }
   .btn-clear { background: none; border: 1px solid #ddd; border-radius: 6px; padding: 7px 14px; font-size: 13px; cursor: pointer; color: #555; align-self: flex-end; font-weight: 600; }
   .btn-clear:hover { background: #f5f5f5; }
+
+  /* Search */
+  .search-row { display: flex; align-items: center; gap: 8px; margin-top: 16px; padding-top: 16px; border-top: 1px solid #f0f0f0; position: relative; }
+  .search-icon { position: absolute; left: 12px; font-size: 13px; opacity: .5; pointer-events: none; }
+  .search-input { flex: 1; border: 1px solid #ddd; border-radius: 6px; padding: 9px 34px 9px 34px; font-size: 13px; color: #333; outline: none; transition: border .15s; background: #fff; }
+  .search-input:focus { border-color: #3b82f6; }
+  .search-input::placeholder { color: #bbb; }
+  .search-clear { position: absolute; right: 10px; background: none; border: none; color: #ccc; font-size: 18px; line-height: 1; cursor: pointer; padding: 2px 4px; display: none; }
+  .search-clear:hover { color: #e53e3e; }
+  .search-row.has-text .search-clear { display: block; }
 
   /* Tasks table */
   .tasks-table { width: 100%; border-collapse: collapse; }
@@ -167,6 +177,16 @@
         <div class="job-tags" id="job-tags-form"></div>
       </div>
       <div class="form-field">
+        <label>Type</label>
+        <input list="type-list" id="tf-type" placeholder="Type or pick..." autocomplete="off">
+        <datalist id="type-list"></datalist>
+      </div>
+      <div class="form-field">
+        <label>Trade</label>
+        <input list="trade-list" id="tf-trade" placeholder="Type or pick..." autocomplete="off">
+        <datalist id="trade-list"></datalist>
+      </div>
+      <div class="form-field">
         <label>Task</label>
         <input type="text" id="tf-task" placeholder="What needs doing...">
       </div>
@@ -174,11 +194,6 @@
         <label>Contact</label>
         <input list="contact-list" id="tf-contact" placeholder="Type or pick..." autocomplete="off">
         <datalist id="contact-list"></datalist>
-      </div>
-      <div class="form-field">
-        <label>Trade</label>
-        <input list="trade-list" id="tf-trade" placeholder="Type or pick..." autocomplete="off">
-        <datalist id="trade-list"></datalist>
       </div>
       <div class="form-field">
         <label>Due date</label>
@@ -207,6 +222,12 @@
         </select>
       </div>
       <div class="form-field">
+        <label>Type</label>
+        <select id="f-type" onchange="renderTasks()">
+          <option value="">All types</option>
+        </select>
+      </div>
+      <div class="form-field">
         <label>Contact</label>
         <select id="f-contact" onchange="renderTasks()">
           <option value="">All contacts</option>
@@ -230,10 +251,12 @@
         <label>Sort by</label>
         <select id="f-sort" onchange="renderTasks()">
           <option value="added">Date added</option>
+          <option value="completed">Date completed</option>
           <option value="due">Due date</option>
           <option value="job">Job</option>
-          <option value="contact">Contact</option>
+          <option value="type">Type</option>
           <option value="trade">Trade</option>
+          <option value="contact">Contact</option>
         </select>
       </div>
       <div class="form-field">
@@ -244,6 +267,11 @@
         </select>
       </div>
       <button class="btn-clear" onclick="clearFilters()">Clear filters</button>
+    </div>
+    <div class="search-row">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="f-search" class="search-input" placeholder="Search tasks, jobs, types, trades, contacts…" autocomplete="off" oninput="renderTasks()">
+      <button class="search-clear" id="search-clear" onclick="clearSearch()" title="Clear search">×</button>
     </div>
   </div>
 
@@ -256,10 +284,11 @@
       <thead>
         <tr>
           <th>Status</th>
-          <th>Task</th>
           <th>Job</th>
-          <th>Contact</th>
+          <th>Type</th>
           <th>Trade</th>
+          <th>Task</th>
+          <th>Contact</th>
           <th>Due</th>
           <th>Added</th>
           <th>Completed</th>
@@ -278,21 +307,25 @@
     <div class="modal-title">Edit Task</div>
     <div class="modal-grid">
       <div class="form-field full">
-        <label>Task</label>
-        <input type="text" id="e-task" placeholder="What needs doing...">
-      </div>
-      <div class="form-field full">
         <label>Jobs</label>
         <input list="job-list" id="e-job" placeholder="Type or pick, comma or Enter to add" autocomplete="off" onkeydown="handleEditJobKeydown(event)">
         <div class="job-tags" id="edit-job-tags"></div>
       </div>
       <div class="form-field">
-        <label>Contact</label>
-        <input list="contact-list" id="e-contact" placeholder="Type or pick..." autocomplete="off">
+        <label>Type</label>
+        <input list="type-list" id="e-type" placeholder="Type or pick..." autocomplete="off">
       </div>
       <div class="form-field">
         <label>Trade</label>
         <input list="trade-list" id="e-trade" placeholder="Type or pick..." autocomplete="off">
+      </div>
+      <div class="form-field full">
+        <label>Task</label>
+        <input type="text" id="e-task" placeholder="What needs doing...">
+      </div>
+      <div class="form-field">
+        <label>Contact</label>
+        <input list="contact-list" id="e-contact" placeholder="Type or pick..." autocomplete="off">
       </div>
       <div class="form-field">
         <label>Due date</label>
@@ -404,6 +437,8 @@ const PRESET_CONTACTS = [
   { id:'c_spinelli',    name:'Spinelli, Jim',             role:'client', detail:'' },
 ];
 
+const PRESET_TYPES = ['Client Change Order'];
+
 const PRESET_TRADES = [
   'Foundation','Framing','Steel','Roof','Windows',
   'Exterior Doors and Hardware','Siding','Masonry',
@@ -442,6 +477,7 @@ let tasks      = [];
 let contacts   = null;
 let tradeTasks = {};
 let trades     = PRESET_TRADES;
+let types      = PRESET_TYPES;
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 
@@ -454,6 +490,7 @@ async function init() {
   contacts = get('fs_contacts', null);
   tradeTasks = get('fs_trade_tasks', {});
   trades   = get('fs_trades', PRESET_TRADES);
+  types    = get('fs_types',  PRESET_TYPES);
 
   if (!contacts) { contacts = PRESET_CONTACTS; save('fs_contacts', contacts); }
 
@@ -469,6 +506,7 @@ async function init() {
       t.jobs = t.job ? [t.job] : [];
       delete t.job;
     }
+    if (!('type' in t)) t.type = '';
     return t;
   });
   save('fs_tasks', tasks);
@@ -476,7 +514,9 @@ async function init() {
   populateJobDatalist();
   populateContactDatalist();
   populateTradeDatalist();
+  populateTypeDatalist();
   populateJobFilter();
+  populateTypeFilter();
   populateContactFilter();
   populateTradeFilter();
   populateRoleDatalist();
@@ -484,7 +524,7 @@ async function init() {
   renderContacts();
   renderTradeList();
 
-  ['tf-job','tf-task','tf-contact','tf-trade','tf-due'].forEach(id => {
+  ['tf-job','tf-type','tf-trade','tf-task','tf-contact','tf-due'].forEach(id => {
     document.getElementById(id).addEventListener('keydown', e => { if(e.key==='Enter') addTask(); });
   });
 }
@@ -502,6 +542,27 @@ function populateContactDatalist() {
 function populateTradeDatalist() {
   const dl = document.getElementById('trade-list');
   dl.innerHTML = trades.map(t => `<option value="${t}">`).join('');
+}
+
+function populateTypeDatalist() {
+  const dl = document.getElementById('type-list');
+  dl.innerHTML = types.map(t => `<option value="${esc(t)}">`).join('');
+}
+
+function populateTypeFilter() {
+  const sel = document.getElementById('f-type');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All types</option>' +
+    types.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
+  sel.value = cur;
+}
+
+function ensureType(name) {
+  if (!name || types.includes(name)) return;
+  types.push(name);
+  save('fs_types', types);
+  populateTypeDatalist();
+  populateTypeFilter();
 }
 
 function populateTradeFilter() {
@@ -622,11 +683,14 @@ function toggleStatusPanel(e) {
 }
 
 function updateStatusLabel() {
+  // Status is shown as plain checkboxes now; the old summary label may not exist.
+  const label = document.getElementById('status-label');
+  if (!label) return;
   const names = [];
   if (document.getElementById('fs-open').checked)   names.push('Open');
   if (document.getElementById('fs-inprog').checked) names.push('In Progress');
   if (document.getElementById('fs-done').checked)   names.push('Completed');
-  document.getElementById('status-label').textContent =
+  label.textContent =
     names.length === 0 ? 'None' : names.length === 3 ? 'All' : names.join(', ');
 }
 
@@ -638,26 +702,28 @@ document.addEventListener('click', () => {
 // ─── TASKS ───────────────────────────────────────────────────────────────────
 
 function addTask() {
+  const type    = document.getElementById('tf-type').value.trim();
+  const trade   = document.getElementById('tf-trade').value.trim();
   const task    = document.getElementById('tf-task').value.trim();
   const contact = document.getElementById('tf-contact').value.trim();
-  const trade   = document.getElementById('tf-trade').value.trim();
   const due     = document.getElementById('tf-due').value;
 
   // also grab whatever is typed in job field that hasn't been tagged yet
   const jobInp = document.getElementById('tf-job').value.trim();
   if (jobInp && !pendingJobs.includes(jobInp)) pendingJobs.push(jobInp);
 
-  if (!task && !pendingJobs.length && !contact && !trade && !due) return;
+  if (!task && !pendingJobs.length && !contact && !trade && !type && !due) return;
 
   if (trade) ensureTrade(trade);
-  tasks.unshift({ id: Date.now(), jobs: [...pendingJobs], task, contact, trade, due,
+  if (type)  ensureType(type);
+  tasks.unshift({ id: Date.now(), jobs: [...pendingJobs], type, trade, task, contact, due,
     status: 'open', startedAt: null, completedAt: null,
     added: new Date().toISOString() });
   save('fs_tasks', tasks);
 
   pendingJobs = [];
   document.getElementById('job-tags-form').innerHTML = '';
-  ['tf-job','tf-task','tf-contact','tf-trade','tf-due'].forEach(id => {
+  ['tf-job','tf-type','tf-trade','tf-task','tf-contact','tf-due'].forEach(id => {
     document.getElementById(id).value = '';
   });
   renderTasks();
@@ -704,37 +770,69 @@ function daysTracked(t) {
   return `<span style="font-size:12px;font-weight:600;color:${color}">${label}</span>`;
 }
 
+// Every word typed must appear somewhere in the task, so "1a plumb" narrows.
+function matchesSearch(t, terms) {
+  if (!terms.length) return true;
+  const hay = [
+    t.task, t.type, t.trade, t.contact,
+    ...(t.jobs || [])
+  ].filter(Boolean).join(' ').toLowerCase();
+  return terms.every(term => hay.includes(term));
+}
+
+function searchTerms() {
+  const el = document.getElementById('f-search');
+  const q = el ? el.value.trim().toLowerCase() : '';
+  return q ? q.split(/\s+/) : [];
+}
+
+function clearSearch() {
+  document.getElementById('f-search').value = '';
+  renderTasks();
+}
+
 function renderTasks() {
   const showOpen  = document.getElementById('fs-open').checked;
   const showInProg= document.getElementById('fs-inprog').checked;
   const showDone  = document.getElementById('fs-done').checked;
   const jobF     = document.getElementById('f-job').value;
+  const typeF    = document.getElementById('f-type').value;
   const contactF = document.getElementById('f-contact').value;
   const tradeF   = document.getElementById('f-trade').value;
   const dueF     = document.getElementById('f-due').value;
   const addedF   = document.getElementById('f-added').value;
   const sortBy   = document.getElementById('f-sort').value;
   const order    = document.getElementById('f-order').value;
+  const terms    = searchTerms();
+
+  document.querySelector('.search-row').classList.toggle('has-text', terms.length > 0);
 
   let list = tasks.filter(t => {
     if (t.status === 'open'        && !showOpen)   return false;
     if (t.status === 'in-progress' && !showInProg) return false;
     if (t.status === 'completed'   && !showDone)   return false;
     if (jobF     && !(t.jobs||[]).includes(jobF))  return false;
+    if (typeF    && t.type    !== typeF)            return false;
     if (contactF && t.contact !== contactF)         return false;
     if (tradeF   && t.trade   !== tradeF)           return false;
     if (dueF     && t.due     !== dueF)             return false;
     if (addedF   && !t.added.startsWith(addedF))    return false;
+    if (!matchesSearch(t, terms))                   return false;
     return true;
   });
 
+  const jobKey = t => (t.jobs || [])[0] || '';
   list.sort((a, b) => {
     let va, vb;
-    if      (sortBy === 'added') { va = a.added;      vb = b.added; }
-    else if (sortBy === 'due')   { va = a.due||'';    vb = b.due||''; }
-    else if (sortBy === 'job')   { va = a.job||'';    vb = b.job||''; }
-    else if (sortBy === 'trade') { va = a.trade||'';  vb = b.trade||''; }
-    else                         { va = a.contact||''; vb = b.contact||''; }
+    if      (sortBy === 'added')     { va = a.added;             vb = b.added; }
+    else if (sortBy === 'completed') { va = a.completedAt||'';   vb = b.completedAt||''; }
+    else if (sortBy === 'due')       { va = a.due||'';           vb = b.due||''; }
+    else if (sortBy === 'job')       { va = jobKey(a);           vb = jobKey(b); }
+    else if (sortBy === 'type')      { va = a.type||'';          vb = b.type||''; }
+    else if (sortBy === 'trade')     { va = a.trade||'';         vb = b.trade||''; }
+    else                             { va = a.contact||'';       vb = b.contact||''; }
+    // tasks with no value for the sort key always sink to the bottom
+    if (!va !== !vb) return va ? -1 : 1;
     return order === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
   });
 
@@ -751,10 +849,11 @@ function renderTasks() {
     const rowClass = t.status === 'completed' ? 'completed' : '';
     return `<tr class="${rowClass}">
       <td>${statusBadge(t)}</td>
-      <td>${esc(t.task)}</td>
       <td>${jobBadges}</td>
-      <td>${esc(t.contact) || '<span style="color:#ccc">—</span>'}</td>
+      <td>${t.type ? `<span style="font-size:12px;background:#fef3e0;color:#a15c00;border-radius:10px;padding:2px 9px;font-weight:600">${esc(t.type)}</span>` : '<span style="color:#ccc">—</span>'}</td>
       <td>${t.trade ? `<span style="font-size:12px;background:#f0f7ee;color:#2d6a4f;border-radius:10px;padding:2px 9px;font-weight:600">${esc(t.trade)}</span>` : '<span style="color:#ccc">—</span>'}</td>
+      <td>${esc(t.task)}</td>
+      <td>${esc(t.contact) || '<span style="color:#ccc">—</span>'}</td>
       <td class="col-due ${overdue}">${t.due ? fmtDate(t.due) : '<span style="color:#ccc">—</span>'}</td>
       <td class="col-added">${fmtDateTime(t.added)}</td>
       <td class="col-completed">
@@ -777,7 +876,9 @@ function clearFilters() {
   document.getElementById('fs-done').checked   = false;
   updateStatusLabel();
   document.getElementById('f-job').value     = '';
+  document.getElementById('f-type').value    = '';
   document.getElementById('f-contact').value = '';
+  document.getElementById('f-search').value  = '';
   document.getElementById('f-trade').value   = '';
   document.getElementById('f-due').value     = '';
   document.getElementById('f-added').value   = '';
@@ -918,6 +1019,7 @@ function openEditModal(id) {
   editPendingJobs = [...(t.jobs || [])];
   document.getElementById('e-task').value    = t.task || '';
   document.getElementById('e-contact').value = t.contact || '';
+  document.getElementById('e-type').value    = t.type || '';
   document.getElementById('e-trade').value   = t.trade || '';
   document.getElementById('e-due').value     = t.due || '';
   document.getElementById('e-job').value     = '';
@@ -972,11 +1074,14 @@ function saveEdit() {
   const jobInp = document.getElementById('e-job').value.trim();
   if (jobInp && !editPendingJobs.includes(jobInp)) editPendingJobs.push(jobInp);
   const trade = document.getElementById('e-trade').value.trim();
+  const type  = document.getElementById('e-type').value.trim();
   if (trade) ensureTrade(trade);
+  if (type)  ensureType(type);
   t.jobs    = [...editPendingJobs];
+  t.type    = type;
+  t.trade   = trade;
   t.task    = document.getElementById('e-task').value.trim();
   t.contact = document.getElementById('e-contact').value.trim();
-  t.trade   = trade;
   t.due     = document.getElementById('e-due').value;
   save('fs_tasks', tasks);
   closeEditModal();
@@ -994,16 +1099,20 @@ function exportPDF() {
   const showInProg= document.getElementById('fs-inprog').checked;
   const showDone  = document.getElementById('fs-done').checked;
   const jobF      = document.getElementById('f-job').value;
+  const typeF     = document.getElementById('f-type').value;
   const contactF  = document.getElementById('f-contact').value;
   const tradeF    = document.getElementById('f-trade').value;
+  const terms     = searchTerms();
 
   let list = tasks.filter(t => {
     if (t.status === 'open'        && !showOpen)   return false;
     if (t.status === 'in-progress' && !showInProg) return false;
     if (t.status === 'completed'   && !showDone)   return false;
     if (jobF     && !(t.jobs||[]).includes(jobF))  return false;
+    if (typeF    && t.type    !== typeF)            return false;
     if (contactF && t.contact !== contactF)         return false;
     if (tradeF   && t.trade   !== tradeF)           return false;
+    if (!matchesSearch(t, terms))                   return false;
     return true;
   });
 
@@ -1013,10 +1122,11 @@ function exportPDF() {
     const jobs = (t.jobs||[]).map(l => { const o = PRESET_JOBS.find(j=>j.label===l); return o?o.id:l; }).join(', ') || '—';
     return `<tr>
       <td style="width:22px;border:1px solid #ccc;text-align:center"> </td>
-      <td style="padding:6px 10px;border:1px solid #ccc">${esc(t.task)||'—'}</td>
       <td style="padding:6px 10px;border:1px solid #ccc;white-space:nowrap">${esc(jobs)}</td>
-      <td style="padding:6px 10px;border:1px solid #ccc;white-space:nowrap">${esc(t.contact)||'—'}</td>
+      <td style="padding:6px 10px;border:1px solid #ccc;white-space:nowrap">${esc(t.type)||'—'}</td>
       <td style="padding:6px 10px;border:1px solid #ccc;white-space:nowrap">${esc(t.trade)||'—'}</td>
+      <td style="padding:6px 10px;border:1px solid #ccc">${esc(t.task)||'—'}</td>
+      <td style="padding:6px 10px;border:1px solid #ccc;white-space:nowrap">${esc(t.contact)||'—'}</td>
       <td style="padding:6px 10px;border:1px solid #ccc;white-space:nowrap">${t.due ? fmtDate(t.due) : '—'}</td>
       <td style="padding:6px 10px;border:1px solid #ccc;white-space:nowrap">${statusLabel(t.status)}</td>
     </tr>`;
@@ -1038,7 +1148,7 @@ function exportPDF() {
   <table>
     <thead><tr>
       <th style="width:22px"></th>
-      <th>Task</th><th>Job</th><th>Contact</th><th>Trade</th><th>Due</th><th>Status</th>
+      <th>Job</th><th>Type</th><th>Trade</th><th>Task</th><th>Contact</th><th>Due</th><th>Status</th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>
