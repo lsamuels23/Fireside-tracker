@@ -54,6 +54,12 @@
   .tasks-table { width: 100%; border-collapse: collapse; }
   .tasks-table th { text-align: left; font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #aaa; text-transform: uppercase; padding: 0 12px 10px; border-bottom: 1px solid #eee; }
   .tasks-table th:first-child { width: 36px; }
+  .tasks-table th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+  .tasks-table th.sortable:hover { color: #e87c2f; }
+  .tasks-table th .sort-arrow { display: inline-block; margin-left: 4px; font-size: 9px; opacity: 0; transition: opacity .12s; }
+  .tasks-table th.sortable:hover .sort-arrow { opacity: .45; }
+  .tasks-table th.sorted { color: #e87c2f; }
+  .tasks-table th.sorted .sort-arrow { opacity: 1; }
   .tasks-table td { padding: 12px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
   .tasks-table tr:last-child td { border-bottom: none; }
   .tasks-table tr.completed td { opacity: .45; text-decoration: line-through; }
@@ -262,6 +268,9 @@
           <option value="type">Type</option>
           <option value="trade">Trade</option>
           <option value="contact">Contact</option>
+          <option value="status">Status</option>
+          <option value="location">Location</option>
+          <option value="task">Task</option>
         </select>
       </div>
       <div class="form-field">
@@ -288,16 +297,16 @@
     <table class="tasks-table">
       <thead>
         <tr>
-          <th>Status</th>
-          <th>Job</th>
-          <th>Type</th>
-          <th>Trade</th>
-          <th>Location</th>
-          <th>Task</th>
-          <th>Contact</th>
-          <th>Due</th>
-          <th>Added</th>
-          <th>Completed</th>
+          <th class="sortable" data-sort="status"    onclick="sortByColumn('status')">Status<span class="sort-arrow">▼</span></th>
+          <th class="sortable" data-sort="job"       onclick="sortByColumn('job')">Job<span class="sort-arrow">▼</span></th>
+          <th class="sortable" data-sort="type"      onclick="sortByColumn('type')">Type<span class="sort-arrow">▼</span></th>
+          <th class="sortable" data-sort="trade"     onclick="sortByColumn('trade')">Trade<span class="sort-arrow">▼</span></th>
+          <th class="sortable" data-sort="location"  onclick="sortByColumn('location')">Location<span class="sort-arrow">▼</span></th>
+          <th class="sortable" data-sort="task"      onclick="sortByColumn('task')">Task<span class="sort-arrow">▼</span></th>
+          <th class="sortable" data-sort="contact"   onclick="sortByColumn('contact')">Contact<span class="sort-arrow">▼</span></th>
+          <th class="sortable" data-sort="due"       onclick="sortByColumn('due')">Due<span class="sort-arrow">▼</span></th>
+          <th class="sortable" data-sort="added"     onclick="sortByColumn('added')">Added<span class="sort-arrow">▼</span></th>
+          <th class="sortable" data-sort="completed" onclick="sortByColumn('completed')">Completed<span class="sort-arrow">▼</span></th>
           <th></th>
         </tr>
       </thead>
@@ -811,6 +820,37 @@ function clearSearch() {
   renderTasks();
 }
 
+// ─── COLUMN SORTING ───────────────────────────────────────────────────────────
+
+// dates read best newest-first; text reads best A–Z
+const SORT_DEFAULT_ORDER = { added: 'desc', completed: 'desc', due: 'asc', status: 'asc',
+                             job: 'asc', type: 'asc', trade: 'asc', location: 'asc',
+                             task: 'asc', contact: 'asc' };
+
+function sortByColumn(key) {
+  const sortEl  = document.getElementById('f-sort');
+  const orderEl = document.getElementById('f-order');
+  if (sortEl.value === key) {
+    orderEl.value = orderEl.value === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortEl.value  = key;
+    orderEl.value = SORT_DEFAULT_ORDER[key] || 'asc';
+  }
+  renderTasks();
+}
+
+function updateSortIndicators(sortBy, order) {
+  document.querySelectorAll('.tasks-table th[data-sort]').forEach(th => {
+    const active = th.dataset.sort === sortBy;
+    th.classList.toggle('sorted', active);
+    const arrow = th.querySelector('.sort-arrow');
+    if (arrow) arrow.textContent = (active ? order : SORT_DEFAULT_ORDER[th.dataset.sort]) === 'asc' ? '▲' : '▼';
+    th.title = active
+      ? `Sorted ${order === 'asc' ? 'ascending' : 'descending'} — click to reverse`
+      : 'Click to sort by this column';
+  });
+}
+
 function renderTasks() {
   const showOpen  = document.getElementById('fs-open').checked;
   const showInProg= document.getElementById('fs-inprog').checked;
@@ -841,7 +881,8 @@ function renderTasks() {
     return true;
   });
 
-  const jobKey = t => (t.jobs || [])[0] || '';
+  const jobKey    = t => (t.jobs || [])[0] || '';
+  const statusKey = t => ({ 'open': '1', 'in-progress': '2', 'completed': '3' })[t.status] || '9';
   list.sort((a, b) => {
     let va, vb;
     if      (sortBy === 'added')     { va = a.added;             vb = b.added; }
@@ -850,11 +891,16 @@ function renderTasks() {
     else if (sortBy === 'job')       { va = jobKey(a);           vb = jobKey(b); }
     else if (sortBy === 'type')      { va = a.type||'';          vb = b.type||''; }
     else if (sortBy === 'trade')     { va = a.trade||'';         vb = b.trade||''; }
+    else if (sortBy === 'status')    { va = statusKey(a);        vb = statusKey(b); }
+    else if (sortBy === 'location')  { va = a.location||'';      vb = b.location||''; }
+    else if (sortBy === 'task')      { va = a.task||'';          vb = b.task||''; }
     else                             { va = a.contact||'';       vb = b.contact||''; }
     // tasks with no value for the sort key always sink to the bottom
     if (!va !== !vb) return va ? -1 : 1;
     return order === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
   });
+
+  updateSortIndicators(sortBy, order);
 
   const today = new Date().toISOString().slice(0,10);
   document.getElementById('tasks-body').innerHTML = list.map(t => {
