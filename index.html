@@ -179,6 +179,10 @@
   .btn-addlevel:disabled { opacity: .45; cursor: default; color: #999; border-color: #e5e5e5; }
   .sort-none { font-size: 12px; color: #bbb; margin-bottom: 7px; }
   .sort-level { font-size: 9px; vertical-align: super; margin-left: 1px; opacity: .85; }
+  .view-picker-row { margin-bottom: 16px; }
+  .view-picker { border: 1px solid #3b82f6; color: #3b82f6; background: #fff; border-radius: 6px; padding: 7px 10px; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; max-width: 260px; }
+  .view-picker:hover:not(:disabled) { background: #eef4ff; }
+  .view-picker:disabled { border-color: #e0e0e0; color: #aaa; cursor: default; }
   .btn-saveview { background: #fff; border: 1px solid #3b82f6; color: #3b82f6; border-radius: 6px; padding: 7px 14px; font-size: 13px; font-weight: 600; cursor: pointer; align-self: flex-end; }
   .btn-saveview:hover { background: #eef4ff; }
 
@@ -288,6 +292,9 @@
       </button>
     </div>
     <div class="card-body" id="filters-body">
+    <div class="view-picker-row">
+      <select class="view-picker" id="f-view" onchange="applyView(Number(this.value))" title="Load a saved view"></select>
+    </div>
     <div class="filters">
       <div class="form-field">
         <label>Status</label>
@@ -1241,8 +1248,22 @@ function captureView() {
   };
 }
 
+// Keeps the Tasks-page picker in step with whatever is on the Saved Views tab.
+function populateViewPicker() {
+  const sel = document.getElementById('f-view');
+  if (!sel) return;
+  sel.disabled = !views.length;
+  sel.innerHTML = views.length
+    ? '<option value="">Apply a saved view…</option>' +
+      views.map(v => `<option value="${v.id}">${esc(v.name)}</option>`).join('')
+    : '<option value="">No saved views yet</option>';
+}
+
 function applyView(id) {
   const v = views.find(v => v.id === id);
+  // the picker is a menu, not a status light: drop back to the prompt either way
+  const sel = document.getElementById('f-view');
+  if (sel) sel.value = '';
   if (!v) return;
   const s = v.state || {};
   document.getElementById('fs-open').checked   = !!s.open;
@@ -1282,6 +1303,7 @@ function viewSummary(s) {
 }
 
 function renderViews() {
+  populateViewPicker();
   const grid = document.getElementById('views-grid');
   if (!grid) return;
   document.getElementById('views-empty').style.display = views.length ? 'none' : 'block';
