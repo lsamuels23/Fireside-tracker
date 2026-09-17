@@ -23,6 +23,17 @@
   .card { background: #fff; border-radius: 10px; padding: 20px 24px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
   .card-title { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; color: #999; text-transform: uppercase; margin-bottom: 16px; }
 
+  /* Collapsible card header */
+  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; user-select: none; margin-bottom: 16px; }
+  .card-head .card-title { margin-bottom: 0; }
+  .card-head:hover .card-title { color: #666; }
+  .card-toggle { display: flex; align-items: center; justify-content: center; gap: 7px; background: none; border: none; cursor: pointer; color: #bbb; padding: 4px 7px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+  .card-head:hover .card-toggle { color: #555; background: #f2f3f5; }
+  .card-chevron { display: block; transition: transform .18s ease; }
+  /* points up while open (click to fold away), mirrors to point down once collapsed */
+  .collapsed .card-chevron { transform: scaleY(-1); }
+  .card-body.hidden { display: none; }
+
   /* Task form */
   .task-form { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1.4fr 1fr 165px auto; gap: 10px; align-items: start; }
   .task-form .hint { grid-column: 1/-1; font-size: 12px; color: #aaa; margin-top: -4px; }
@@ -265,8 +276,18 @@
     <div class="hint">All fields optional. Press Enter in any box to add. Date &amp; time added is recorded automatically.</div>
   </div>
 
-  <div class="card">
-    <div class="card-title">Filter &amp; Sort</div>
+  <div class="card" id="filters-card">
+    <div class="card-head" onclick="toggleFilterCard()" title="Show or hide the filter and sort controls">
+      <div class="card-title">Filter &amp; Sort</div>
+      <button class="card-toggle" id="filters-toggle" type="button" aria-expanded="true" title="Hide filters &amp; sort">
+        <span id="filters-toggle-label">Collapse</span>
+        <svg class="card-chevron" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="6 15 12 9 18 15"></polyline>
+        </svg>
+      </button>
+    </div>
+    <div class="card-body" id="filters-body">
     <div class="filters">
       <div class="form-field">
         <label>Status</label>
@@ -323,6 +344,7 @@
       <span class="search-icon">🔍</span>
       <input type="text" id="f-search" class="search-input" placeholder="Search tasks, jobs, types, trades, locations, rooms, contacts…" autocomplete="off" oninput="renderTasks()">
       <button class="search-clear" id="search-clear" onclick="clearSearch()" title="Clear search">×</button>
+    </div>
     </div>
   </div>
 
@@ -1187,6 +1209,17 @@ function clearFiltersAndSort() {
   sortLevels = [];
   activeSortLevel = null;
   clearFilterFields();
+}
+
+// Filter & Sort panel folds away when you want the task table to have the screen.
+// It always starts expanded.
+function toggleFilterCard() {
+  const collapsed = document.getElementById('filters-card').classList.toggle('collapsed');
+  document.getElementById('filters-body').classList.toggle('hidden', collapsed);
+  const btn = document.getElementById('filters-toggle');
+  btn.setAttribute('aria-expanded', String(!collapsed));
+  btn.title = collapsed ? 'Show filters & sort' : 'Hide filters & sort';
+  document.getElementById('filters-toggle-label').textContent = collapsed ? 'Expand' : 'Collapse';
 }
 
 // ─── SAVED VIEWS ──────────────────────────────────────────────────────────────
