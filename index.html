@@ -24,7 +24,7 @@
   .card-title { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; color: #999; text-transform: uppercase; margin-bottom: 16px; }
 
   /* Task form */
-  .task-form { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1.4fr 1fr 165px auto; gap: 10px; align-items: start; }
+  .task-form { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1.4fr 1fr 165px auto; gap: 10px; align-items: start; }
   .task-form .hint { grid-column: 1/-1; font-size: 12px; color: #aaa; margin-top: -4px; }
   .form-field { display: flex; flex-direction: column; gap: 4px; }
   .form-field label { font-size: 11px; color: #888; font-weight: 500; }
@@ -143,6 +143,50 @@
     .task-form .btn-add { grid-column: 1/-1; }
   }
 
+  /* Sort hierarchy */
+  .filter-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
+  .sort-builder { flex-basis: 100%; border-top: 1px solid #f0f0f0; padding-top: 12px; margin-top: 2px; }
+  .sort-builder-title { font-size: 11px; color: #888; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; margin-bottom: 9px; }
+  .sort-row { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; flex-wrap: wrap; padding: 4px 8px; border: 1px solid transparent; border-radius: 8px; cursor: pointer; }
+  .sort-row:hover { background: #fafbfc; }
+  .sort-row.active { background: #f2f8ff; border-color: #cfe0f8; }
+  .sort-rowlabel { font-size: 12px; color: #888; font-weight: 600; width: 58px; flex-shrink: 0; }
+  .sort-row.active .sort-rowlabel { color: #3b82f6; }
+  .sort-aim { font-size: 11px; color: #3b82f6; font-weight: 600; }
+  .sort-tip { font-size: 11px; color: #bbb; margin-top: 7px; margin-left: 73px; }
+  .sort-row select { border: 1px solid #ddd; border-radius: 6px; padding: 6px 9px; font-size: 13px; color: #333; outline: none; background: #fff; min-width: 152px; }
+  .sort-row select:focus { border-color: #3b82f6; }
+  .sort-dir { border: 1px solid #ddd; background: #fff; border-radius: 6px; padding: 6px 11px; font-size: 12px; font-weight: 600; color: #444; cursor: pointer; min-width: 116px; text-align: left; }
+  .sort-dir:hover { background: #f5f5f5; }
+  .sort-iconbtn { border: 1px solid transparent; background: none; border-radius: 5px; width: 22px; height: 24px; font-size: 10px; color: #aaa; cursor: pointer; line-height: 1; padding: 0; }
+  .sort-iconbtn:hover:not(:disabled) { background: #f0f2f5; color: #444; }
+  .sort-iconbtn:disabled { opacity: .25; cursor: default; }
+  .sort-iconbtn.kill { font-size: 16px; color: #ccc; margin-left: 2px; }
+  .sort-iconbtn.kill:hover { background: #fdf0f0; color: #c0392b; }
+  .btn-addlevel { background: none; border: 1px dashed #c8d4e4; color: #3b82f6; border-radius: 6px; padding: 6px 13px; font-size: 12px; font-weight: 600; cursor: pointer; margin-top: 3px; margin-left: 73px; }
+  .btn-addlevel:hover:not(:disabled) { background: #f5f9ff; border-color: #3b82f6; }
+  .btn-addlevel:disabled { opacity: .45; cursor: default; color: #999; border-color: #e5e5e5; }
+  .sort-none { font-size: 12px; color: #bbb; margin-bottom: 7px; }
+  .sort-level { font-size: 9px; vertical-align: super; margin-left: 1px; opacity: .85; }
+  .btn-saveview { background: #fff; border: 1px solid #3b82f6; color: #3b82f6; border-radius: 6px; padding: 7px 14px; font-size: 13px; font-weight: 600; cursor: pointer; align-self: flex-end; }
+  .btn-saveview:hover { background: #eef4ff; }
+
+  /* Saved views page */
+  .views-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; }
+  .view-card { border: 1px solid #eee; border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 7px; }
+  .view-name { font-weight: 700; font-size: 15px; }
+  .view-meta { font-size: 12px; color: #777; line-height: 1.6; }
+  .view-meta b { color: #555; font-weight: 600; }
+  .view-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+  .btn-xs { border: 1px solid #ddd; background: #fff; border-radius: 6px; padding: 5px 11px; font-size: 12px; font-weight: 600; cursor: pointer; color: #555; }
+  .btn-xs:hover { background: #f5f5f5; }
+  .btn-xs.primary { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+  .btn-xs.primary:hover { background: #2563eb; }
+  .btn-xs.danger { color: #c0392b; border-color: #f0cccc; }
+  .btn-xs.danger:hover { background: #fdf0f0; }
+  .view-summary { background: #f7f9fc; border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #777; line-height: 1.6; margin-top: 12px; }
+  .view-summary b { color: #555; }
+
   /* Edit modal */
   .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:500; align-items:center; justify-content:center; }
   .modal-overlay.open { display:flex; }
@@ -166,9 +210,10 @@
 
 <div class="nav">
   <div class="nav-logo">🔥 Fireside</div>
-  <div class="nav-tab active" onclick="showPage('tasks')">Tasks</div>
-  <div class="nav-tab" onclick="showPage('trades')">Trades</div>
-  <div class="nav-tab" onclick="showPage('contacts')">Contacts</div>
+  <div class="nav-tab active" data-page="tasks" onclick="showPage('tasks', this)">Tasks</div>
+  <div class="nav-tab" data-page="trades" onclick="showPage('trades', this)">Trades</div>
+  <div class="nav-tab" data-page="contacts" onclick="showPage('contacts', this)">Contacts</div>
+  <div class="nav-tab" data-page="views" onclick="showPage('views', this)">Saved Views</div>
 </div>
 
 <!-- TASKS PAGE -->
@@ -193,9 +238,14 @@
         <datalist id="trade-list"></datalist>
       </div>
       <div class="form-field">
-        <label>Location</label>
+        <label>Location/ Level</label>
         <input list="location-list" id="tf-location" placeholder="Type or pick..." autocomplete="off">
         <datalist id="location-list"></datalist>
+      </div>
+      <div class="form-field">
+        <label>Room</label>
+        <input list="room-list" id="tf-room" placeholder="Type or pick..." autocomplete="off">
+        <datalist id="room-list"></datalist>
       </div>
       <div class="form-field">
         <label>Task</label>
@@ -258,33 +308,20 @@
         <label>Date added</label>
         <input type="date" id="f-added" onchange="renderTasks()">
       </div>
-      <div class="form-field">
-        <label>Sort by</label>
-        <select id="f-sort" onchange="renderTasks()">
-          <option value="added">Date added</option>
-          <option value="completed">Date completed</option>
-          <option value="due">Due date</option>
-          <option value="job">Job</option>
-          <option value="type">Type</option>
-          <option value="trade">Trade</option>
-          <option value="contact">Contact</option>
-          <option value="status">Status</option>
-          <option value="location">Location</option>
-          <option value="task">Task</option>
-        </select>
+      <div class="filter-actions">
+        <button class="btn-clear" onclick="clearFilterFields()">Clear filters</button>
+        <button class="btn-clear" onclick="clearSortOnly()">Clear sort</button>
+        <button class="btn-clear" onclick="clearFiltersAndSort()">Clear filters &amp; sort</button>
+        <button class="btn-saveview" onclick="openSaveViewModal()">☆ Save filters &amp; sort</button>
       </div>
-      <div class="form-field">
-        <label>Order</label>
-        <select id="f-order" onchange="renderTasks()">
-          <option value="desc">Newest / Z–A</option>
-          <option value="asc">Oldest / A–Z</option>
-        </select>
+      <div class="sort-builder">
+        <div class="sort-builder-title">Sort order</div>
+        <div id="sort-rows"></div>
       </div>
-      <button class="btn-clear" onclick="clearFilters()">Clear filters</button>
     </div>
     <div class="search-row">
       <span class="search-icon">🔍</span>
-      <input type="text" id="f-search" class="search-input" placeholder="Search tasks, jobs, types, trades, locations, contacts…" autocomplete="off" oninput="renderTasks()">
+      <input type="text" id="f-search" class="search-input" placeholder="Search tasks, jobs, types, trades, locations, rooms, contacts…" autocomplete="off" oninput="renderTasks()">
       <button class="search-clear" id="search-clear" onclick="clearSearch()" title="Clear search">×</button>
     </div>
   </div>
@@ -297,16 +334,17 @@
     <table class="tasks-table">
       <thead>
         <tr>
-          <th class="sortable" data-sort="status"    onclick="sortByColumn('status')">Status<span class="sort-arrow">▼</span></th>
-          <th class="sortable" data-sort="job"       onclick="sortByColumn('job')">Job<span class="sort-arrow">▼</span></th>
-          <th class="sortable" data-sort="type"      onclick="sortByColumn('type')">Type<span class="sort-arrow">▼</span></th>
-          <th class="sortable" data-sort="trade"     onclick="sortByColumn('trade')">Trade<span class="sort-arrow">▼</span></th>
-          <th class="sortable" data-sort="location"  onclick="sortByColumn('location')">Location<span class="sort-arrow">▼</span></th>
-          <th class="sortable" data-sort="task"      onclick="sortByColumn('task')">Task<span class="sort-arrow">▼</span></th>
-          <th class="sortable" data-sort="contact"   onclick="sortByColumn('contact')">Contact<span class="sort-arrow">▼</span></th>
-          <th class="sortable" data-sort="due"       onclick="sortByColumn('due')">Due<span class="sort-arrow">▼</span></th>
-          <th class="sortable" data-sort="added"     onclick="sortByColumn('added')">Added<span class="sort-arrow">▼</span></th>
-          <th class="sortable" data-sort="completed" onclick="sortByColumn('completed')">Completed<span class="sort-arrow">▼</span></th>
+          <th class="sortable" data-sort="status"    onclick="sortByColumn('status', event)">Status<span class="sort-level"></span><span class="sort-arrow">▼</span></th>
+          <th class="sortable" data-sort="job"       onclick="sortByColumn('job', event)">Job<span class="sort-level"></span><span class="sort-arrow">▼</span></th>
+          <th class="sortable" data-sort="type"      onclick="sortByColumn('type', event)">Type<span class="sort-level"></span><span class="sort-arrow">▼</span></th>
+          <th class="sortable" data-sort="trade"     onclick="sortByColumn('trade', event)">Trade<span class="sort-level"></span><span class="sort-arrow">▼</span></th>
+          <th class="sortable" data-sort="location"  onclick="sortByColumn('location', event)">Location/ Level<span class="sort-level"></span><span class="sort-arrow">▼</span></th>
+          <th class="sortable" data-sort="room"      onclick="sortByColumn('room', event)">Room<span class="sort-level"></span><span class="sort-arrow">▼</span></th>
+          <th class="sortable" data-sort="task"      onclick="sortByColumn('task', event)">Task<span class="sort-level"></span><span class="sort-arrow">▼</span></th>
+          <th class="sortable" data-sort="contact"   onclick="sortByColumn('contact', event)">Contact<span class="sort-level"></span><span class="sort-arrow">▼</span></th>
+          <th class="sortable" data-sort="due"       onclick="sortByColumn('due', event)">Due<span class="sort-level"></span><span class="sort-arrow">▼</span></th>
+          <th class="sortable" data-sort="added"     onclick="sortByColumn('added', event)">Added<span class="sort-level"></span><span class="sort-arrow">▼</span></th>
+          <th class="sortable" data-sort="completed" onclick="sortByColumn('completed', event)">Completed<span class="sort-level"></span><span class="sort-arrow">▼</span></th>
           <th></th>
         </tr>
       </thead>
@@ -335,8 +373,12 @@
         <input list="trade-list" id="e-trade" placeholder="Type or pick..." autocomplete="off">
       </div>
       <div class="form-field full">
-        <label>Location</label>
+        <label>Location/ Level</label>
         <input list="location-list" id="e-location" placeholder="Type or pick..." autocomplete="off">
+      </div>
+      <div class="form-field full">
+        <label>Room</label>
+        <input list="room-list" id="e-room" placeholder="Type or pick..." autocomplete="off">
       </div>
       <div class="form-field full">
         <label>Task</label>
@@ -378,6 +420,35 @@
     </div>
   </div>
   <div class="contacts-grid" id="contacts-grid"></div>
+</div>
+
+<!-- SAVED VIEWS PAGE -->
+<div class="page" id="page-views">
+  <div class="card">
+    <div class="card-title">Saved Views</div>
+    <div class="hint" style="font-size:12px;color:#aaa;margin-bottom:16px">
+      A view remembers the filters and the sort order you had set on the Tasks page.
+      Set them up there, then hit “☆ Save filters &amp; sort”.
+    </div>
+    <div class="views-grid" id="views-grid"></div>
+    <div class="empty-state" id="views-empty">No saved views yet.</div>
+  </div>
+</div>
+
+<!-- SAVE VIEW MODAL -->
+<div class="modal-overlay" id="view-modal">
+  <div class="modal" style="width:min(440px,95vw)">
+    <div class="modal-title">Save this view</div>
+    <div class="form-field">
+      <label>Name</label>
+      <input type="text" id="v-name" placeholder="e.g. Open plumbing, Level 2" autocomplete="off">
+    </div>
+    <div class="view-summary" id="v-summary"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeSaveViewModal()">Cancel</button>
+      <button class="btn-save" onclick="confirmSaveView()">Save view</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -497,6 +568,7 @@ let contacts   = null;
 let tradeTasks = {};
 let trades     = PRESET_TRADES;
 let types      = PRESET_TYPES;
+let views      = [];
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 
@@ -510,6 +582,7 @@ async function init() {
   tradeTasks = get('fs_trade_tasks', {});
   trades   = get('fs_trades', PRESET_TRADES);
   types    = get('fs_types',  PRESET_TYPES);
+  views    = get('fs_views',  []);
 
   if (!contacts) { contacts = PRESET_CONTACTS; save('fs_contacts', contacts); }
 
@@ -527,6 +600,7 @@ async function init() {
     }
     if (!('type' in t)) t.type = '';
     if (!('location' in t)) t.location = '';
+    if (!('room' in t)) t.room = '';
     return t;
   });
   save('fs_tasks', tasks);
@@ -536,6 +610,7 @@ async function init() {
   populateTradeDatalist();
   populateTypeDatalist();
   populateLocationDatalist();
+  populateRoomDatalist();
   populateJobFilter();
   populateTypeFilter();
   populateContactFilter();
@@ -544,8 +619,17 @@ async function init() {
   renderTasks();
   renderContacts();
   renderTradeList();
+  renderViews();
 
-  ['tf-job','tf-type','tf-trade','tf-location','tf-task','tf-contact','tf-due'].forEach(id => {
+  document.getElementById('v-name').addEventListener('keydown', e => {
+    if (e.key === 'Enter') confirmSaveView();
+    if (e.key === 'Escape') closeSaveViewModal();
+  });
+  document.getElementById('view-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeSaveViewModal();
+  });
+
+  ['tf-job','tf-type','tf-trade','tf-location','tf-room','tf-task','tf-contact','tf-due'].forEach(id => {
     document.getElementById(id).addEventListener('keydown', e => { if(e.key==='Enter') addTask(); });
   });
 }
@@ -574,6 +658,12 @@ function populateLocationDatalist() {
   const seen = [...new Set(tasks.map(t => t.location).filter(Boolean))].sort();
   document.getElementById('location-list').innerHTML =
     seen.map(l => `<option value="${esc(l)}">`).join('');
+}
+
+function populateRoomDatalist() {
+  const seen = [...new Set(tasks.map(t => t.room).filter(Boolean))].sort();
+  document.getElementById('room-list').innerHTML =
+    seen.map(r => `<option value="${esc(r)}">`).join('');
 }
 
 function populateTypeFilter() {
@@ -732,6 +822,7 @@ function addTask() {
   const type    = document.getElementById('tf-type').value.trim();
   const trade   = document.getElementById('tf-trade').value.trim();
   const location= document.getElementById('tf-location').value.trim();
+  const room    = document.getElementById('tf-room').value.trim();
   const task    = document.getElementById('tf-task').value.trim();
   const contact = document.getElementById('tf-contact').value.trim();
   const due     = document.getElementById('tf-due').value;
@@ -740,21 +831,22 @@ function addTask() {
   const jobInp = document.getElementById('tf-job').value.trim();
   if (jobInp && !pendingJobs.includes(jobInp)) pendingJobs.push(jobInp);
 
-  if (!task && !pendingJobs.length && !contact && !trade && !type && !location && !due) return;
+  if (!task && !pendingJobs.length && !contact && !trade && !type && !location && !room && !due) return;
 
   if (trade) ensureTrade(trade);
   if (type)  ensureType(type);
-  tasks.unshift({ id: Date.now(), jobs: [...pendingJobs], type, trade, location, task, contact, due,
+  tasks.unshift({ id: Date.now(), jobs: [...pendingJobs], type, trade, location, room, task, contact, due,
     status: 'open', startedAt: null, completedAt: null,
     added: new Date().toISOString() });
   save('fs_tasks', tasks);
 
   pendingJobs = [];
   document.getElementById('job-tags-form').innerHTML = '';
-  ['tf-job','tf-type','tf-trade','tf-location','tf-task','tf-contact','tf-due'].forEach(id => {
+  ['tf-job','tf-type','tf-trade','tf-location','tf-room','tf-task','tf-contact','tf-due'].forEach(id => {
     document.getElementById(id).value = '';
   });
   populateLocationDatalist();
+  populateRoomDatalist();
   renderTasks();
 }
 
@@ -803,7 +895,7 @@ function daysTracked(t) {
 function matchesSearch(t, terms) {
   if (!terms.length) return true;
   const hay = [
-    t.task, t.type, t.trade, t.location, t.contact,
+    t.task, t.type, t.trade, t.location, t.room, t.contact,
     ...(t.jobs || [])
   ].filter(Boolean).join(' ').toLowerCase();
   return terms.every(term => hay.includes(term));
@@ -825,30 +917,180 @@ function clearSearch() {
 // dates read best newest-first; text reads best A–Z
 const SORT_DEFAULT_ORDER = { added: 'desc', completed: 'desc', due: 'asc', status: 'asc',
                              job: 'asc', type: 'asc', trade: 'asc', location: 'asc',
-                             task: 'asc', contact: 'asc' };
+                             room: 'asc', task: 'asc', contact: 'asc' };
 
-function sortByColumn(key) {
-  const sortEl  = document.getElementById('f-sort');
-  const orderEl = document.getElementById('f-order');
-  if (sortEl.value === key) {
-    orderEl.value = orderEl.value === 'asc' ? 'desc' : 'asc';
-  } else {
-    sortEl.value  = key;
-    orderEl.value = SORT_DEFAULT_ORDER[key] || 'asc';
+const SORT_LABELS = { status: 'Status', job: 'Job', type: 'Type', trade: 'Trade',
+                      location: 'Location/ Level', room: 'Room', task: 'Task',
+                      contact: 'Contact', due: 'Due date', added: 'Date added',
+                      completed: 'Date completed' };
+
+// Levels apply in order: level 1 decides, level 2 breaks its ties, and so on.
+let sortLevels  = [{ key: 'added', dir: 'desc' }];
+
+function sortValue(t, key) {
+  switch (key) {
+    case 'added':     return t.added || '';
+    case 'completed': return t.completedAt || '';
+    case 'due':       return t.due || '';
+    case 'job':       return (t.jobs || [])[0] || '';
+    case 'status':    return ({ 'open':'1', 'in-progress':'2', 'completed':'3' })[t.status] || '9';
+    default:          return t[key] || '';
   }
+}
+
+function compareTasks(a, b) {
+  for (const lvl of sortLevels) {
+    const va = sortValue(a, lvl.key), vb = sortValue(b, lvl.key);
+    // tasks with no value for a level always sink below those that have one
+    if (!va !== !vb) return va ? -1 : 1;
+    const c = lvl.dir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+    if (c) return c;
+  }
+  return 0;
+}
+
+// Which sort row column-heading clicks are aimed at. Pick a row in the Sort order
+// list and heading clicks fill that level instead of starting the sort over.
+let activeSortLevel = null;
+
+function setActiveSortLevel(i) {
+  activeSortLevel = (activeSortLevel === i) ? null : i;
   renderTasks();
 }
 
-function updateSortIndicators(sortBy, order) {
+// With a level selected, clicking a heading drops that column into it. Otherwise:
+// click a column you're already sorted on to reverse it, click a new one to start
+// over on it, or shift-click to tack it on underneath the levels you have.
+function sortByColumn(key, ev) {
+  const additive = ev && (ev.shiftKey || ev.ctrlKey || ev.metaKey);
+  const a = activeSortLevel;
+
+  if (a !== null && a < sortLevels.length && !additive) {
+    if (sortLevels[a].key === key) {
+      sortLevels[a].dir = sortLevels[a].dir === 'asc' ? 'desc' : 'asc';
+    } else {
+      // if that column is already sitting on another level, it moves here
+      const dup = sortLevels.findIndex((l, n) => n !== a && l.key === key);
+      sortLevels[a] = { key, dir: SORT_DEFAULT_ORDER[key] || 'asc' };
+      if (dup >= 0) {
+        sortLevels.splice(dup, 1);
+        if (dup < a) activeSortLevel = a - 1;
+      }
+    }
+    renderTasks();
+    return;
+  }
+
+  const i = sortLevels.findIndex(l => l.key === key);
+  if (i >= 0)        sortLevels[i].dir = sortLevels[i].dir === 'asc' ? 'desc' : 'asc';
+  else if (additive) sortLevels.push({ key, dir: SORT_DEFAULT_ORDER[key] || 'asc' });
+  else               sortLevels = [{ key, dir: SORT_DEFAULT_ORDER[key] || 'asc' }];
+  renderTasks();
+}
+
+// Field order for the level dropdowns — roughly how the columns read across.
+const SORT_FIELDS = ['status','job','type','trade','location','room','task','contact','due','added','completed'];
+const DATE_FIELDS = ['due','added','completed'];
+
+// "A–Z" means more than "ascending" does when you're staring at a date column.
+function dirLabel(key, dir) {
+  if (key === 'status')            return dir === 'asc' ? 'Open first' : 'Completed first';
+  if (DATE_FIELDS.includes(key))   return dir === 'asc' ? 'Oldest first' : 'Newest first';
+  return dir === 'asc' ? 'A–Z' : 'Z–A';
+}
+
+function addSortLevel(key) {
+  if (!key || sortLevels.some(l => l.key === key)) return;
+  sortLevels.push({ key, dir: SORT_DEFAULT_ORDER[key] || 'asc' });
+  renderTasks();
+}
+
+// The "+ Add another level" button. The new row is selected straight away, so you
+// can just click the column heading you want it to sort on.
+function addNextSortLevel() {
+  const free = SORT_FIELDS.find(k => !sortLevels.some(l => l.key === k));
+  if (!free) return;
+  addSortLevel(free);
+  activeSortLevel = sortLevels.length - 1;
+  renderTasks();
+}
+
+function setSortKey(i, key) {
+  if (!key || sortLevels.some((l, n) => n !== i && l.key === key)) return renderTasks();
+  sortLevels[i] = { key, dir: SORT_DEFAULT_ORDER[key] || 'asc' };
+  activeSortLevel = i;
+  renderTasks();
+}
+
+function toggleSortDir(i) { sortLevels[i].dir = sortLevels[i].dir === 'asc' ? 'desc' : 'asc'; renderTasks(); }
+
+function removeSortLevel(i) {
+  sortLevels.splice(i, 1);
+  if (activeSortLevel === i)     activeSortLevel = null;
+  else if (activeSortLevel > i)  activeSortLevel--;
+  renderTasks();
+}
+
+function moveSortLevel(from, to) {
+  if (from === null || from === to || to < 0 || to >= sortLevels.length) return;
+  sortLevels.splice(to, 0, sortLevels.splice(from, 1)[0]);
+  if (activeSortLevel === from)                                      activeSortLevel = to;
+  else if (activeSortLevel > from && activeSortLevel <= to)           activeSortLevel--;
+  else if (activeSortLevel < from && activeSortLevel >= to)           activeSortLevel++;
+  renderTasks();
+}
+
+function renderSortStack() {
+  const wrap = document.getElementById('sort-rows');
+  if (!wrap) return;
+  const allUsed = sortLevels.length >= SORT_FIELDS.length;
+
+  const rows = sortLevels.map((l, i) => {
+    // a field already used on another level shouldn't be offerable twice
+    const opts = SORT_FIELDS
+      .filter(k => k === l.key || !sortLevels.some(o => o.key === k))
+      .map(k => `<option value="${k}"${k === l.key ? ' selected' : ''}>${esc(SORT_LABELS[k])}</option>`)
+      .join('');
+    const on = activeSortLevel === i;
+    return `<div class="sort-row${on ? ' active' : ''}" onclick="setActiveSortLevel(${i})"
+      title="${on ? 'Selected — click a column heading to sort this level by it' : 'Click to aim column-heading clicks at this level'}">
+      <span class="sort-rowlabel">${i === 0 ? 'Sort by' : 'then by'}</span>
+      <select onchange="setSortKey(${i}, this.value)"
+              onclick="event.stopPropagation()" onmousedown="event.stopPropagation()">${opts}</select>
+      <button class="sort-dir" onclick="event.stopPropagation(); toggleSortDir(${i})" title="Click to reverse this level">${l.dir === 'asc' ? '▲' : '▼'} ${dirLabel(l.key, l.dir)}</button>
+      <button class="sort-iconbtn" onclick="event.stopPropagation(); moveSortLevel(${i}, ${i - 1})" ${i === 0 ? 'disabled' : ''} title="Move up a level">↑</button>
+      <button class="sort-iconbtn" onclick="event.stopPropagation(); moveSortLevel(${i}, ${i + 1})" ${i === sortLevels.length - 1 ? 'disabled' : ''} title="Move down a level">↓</button>
+      <button class="sort-iconbtn kill" onclick="event.stopPropagation(); removeSortLevel(${i})" title="Remove this level">×</button>
+      ${on ? '<span class="sort-aim">← click a column heading to set this level</span>' : ''}
+    </div>`;
+  }).join('');
+
+  const none = sortLevels.length ? '' :
+    '<div class="sort-none">Not sorted — newest added first.</div>';
+
+  const tip = sortLevels.length && activeSortLevel === null
+    ? '<div class="sort-tip">Click a level above to aim it, then click a column heading to sort that level by it.</div>'
+    : '';
+
+  wrap.innerHTML = rows + none +
+    `<button class="btn-addlevel" onclick="addNextSortLevel()" ${allUsed ? 'disabled' : ''}
+       style="${sortLevels.length ? '' : 'margin-left:0'}">+ ${sortLevels.length ? 'Add another level' : 'Add a sort level'}</button>` + tip;
+}
+
+function updateSortIndicators() {
   document.querySelectorAll('.tasks-table th[data-sort]').forEach(th => {
-    const active = th.dataset.sort === sortBy;
+    const i      = sortLevels.findIndex(l => l.key === th.dataset.sort);
+    const active = i >= 0;
     th.classList.toggle('sorted', active);
     const arrow = th.querySelector('.sort-arrow');
-    if (arrow) arrow.textContent = (active ? order : SORT_DEFAULT_ORDER[th.dataset.sort]) === 'asc' ? '▲' : '▼';
+    const level = th.querySelector('.sort-level');
+    if (arrow) arrow.textContent = (active ? sortLevels[i].dir : SORT_DEFAULT_ORDER[th.dataset.sort]) === 'asc' ? '▲' : '▼';
+    if (level) level.textContent = active && sortLevels.length > 1 ? String(i + 1) : '';
     th.title = active
-      ? `Sorted ${order === 'asc' ? 'ascending' : 'descending'} — click to reverse`
-      : 'Click to sort by this column';
+      ? `Sort level ${i + 1} of ${sortLevels.length}, ${sortLevels[i].dir === 'asc' ? 'ascending' : 'descending'} — click to reverse, shift-click another column to add a level below it`
+      : 'Click to sort by this column · shift-click to add it as a further level';
   });
+  renderSortStack();
 }
 
 function renderTasks() {
@@ -861,8 +1103,6 @@ function renderTasks() {
   const tradeF   = document.getElementById('f-trade').value;
   const dueF     = document.getElementById('f-due').value;
   const addedF   = document.getElementById('f-added').value;
-  const sortBy   = document.getElementById('f-sort').value;
-  const order    = document.getElementById('f-order').value;
   const terms    = searchTerms();
 
   document.querySelector('.search-row').classList.toggle('has-text', terms.length > 0);
@@ -881,26 +1121,8 @@ function renderTasks() {
     return true;
   });
 
-  const jobKey    = t => (t.jobs || [])[0] || '';
-  const statusKey = t => ({ 'open': '1', 'in-progress': '2', 'completed': '3' })[t.status] || '9';
-  list.sort((a, b) => {
-    let va, vb;
-    if      (sortBy === 'added')     { va = a.added;             vb = b.added; }
-    else if (sortBy === 'completed') { va = a.completedAt||'';   vb = b.completedAt||''; }
-    else if (sortBy === 'due')       { va = a.due||'';           vb = b.due||''; }
-    else if (sortBy === 'job')       { va = jobKey(a);           vb = jobKey(b); }
-    else if (sortBy === 'type')      { va = a.type||'';          vb = b.type||''; }
-    else if (sortBy === 'trade')     { va = a.trade||'';         vb = b.trade||''; }
-    else if (sortBy === 'status')    { va = statusKey(a);        vb = statusKey(b); }
-    else if (sortBy === 'location')  { va = a.location||'';      vb = b.location||''; }
-    else if (sortBy === 'task')      { va = a.task||'';          vb = b.task||''; }
-    else                             { va = a.contact||'';       vb = b.contact||''; }
-    // tasks with no value for the sort key always sink to the bottom
-    if (!va !== !vb) return va ? -1 : 1;
-    return order === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
-  });
-
-  updateSortIndicators(sortBy, order);
+  list.sort(compareTasks);
+  updateSortIndicators();
 
   const today = new Date().toISOString().slice(0,10);
   document.getElementById('tasks-body').innerHTML = list.map(t => {
@@ -919,6 +1141,7 @@ function renderTasks() {
       <td>${t.type ? `<span style="font-size:12px;background:#fef3e0;color:#a15c00;border-radius:10px;padding:2px 9px;font-weight:600">${esc(t.type)}</span>` : '<span style="color:#ccc">—</span>'}</td>
       <td>${t.trade ? `<span style="font-size:12px;background:#f0f7ee;color:#2d6a4f;border-radius:10px;padding:2px 9px;font-weight:600">${esc(t.trade)}</span>` : '<span style="color:#ccc">—</span>'}</td>
       <td>${t.location ? esc(t.location) : '<span style="color:#ccc">—</span>'}</td>
+      <td>${t.room ? esc(t.room) : '<span style="color:#ccc">—</span>'}</td>
       <td>${esc(t.task)}</td>
       <td>${esc(t.contact) || '<span style="color:#ccc">—</span>'}</td>
       <td class="col-due ${overdue}">${t.due ? fmtDate(t.due) : '<span style="color:#ccc">—</span>'}</td>
@@ -937,7 +1160,8 @@ function renderTasks() {
   document.getElementById('tasks-empty').style.display = list.length ? 'none' : 'block';
 }
 
-function clearFilters() {
+// Filter fields only — whatever sort order you've built is left alone.
+function clearFilterFields() {
   document.getElementById('fs-open').checked   = true;
   document.getElementById('fs-inprog').checked = true;
   document.getElementById('fs-done').checked   = false;
@@ -949,9 +1173,147 @@ function clearFilters() {
   document.getElementById('f-trade').value   = '';
   document.getElementById('f-due').value     = '';
   document.getElementById('f-added').value   = '';
-  document.getElementById('f-sort').value    = 'added';
-  document.getElementById('f-order').value   = 'desc';
   renderTasks();
+}
+
+// Sort levels only — the filters stay as they are.
+function clearSortOnly() {
+  sortLevels = [];
+  activeSortLevel = null;
+  renderTasks();
+}
+
+function clearFiltersAndSort() {
+  sortLevels = [];
+  activeSortLevel = null;
+  clearFilterFields();
+}
+
+// ─── SAVED VIEWS ──────────────────────────────────────────────────────────────
+
+// A view is a snapshot of every filter field plus the whole sort hierarchy.
+function captureView() {
+  return {
+    open:    document.getElementById('fs-open').checked,
+    inprog:  document.getElementById('fs-inprog').checked,
+    done:    document.getElementById('fs-done').checked,
+    job:     document.getElementById('f-job').value,
+    type:    document.getElementById('f-type').value,
+    contact: document.getElementById('f-contact').value,
+    trade:   document.getElementById('f-trade').value,
+    due:     document.getElementById('f-due').value,
+    added:   document.getElementById('f-added').value,
+    search:  document.getElementById('f-search').value,
+    sort:    sortLevels.map(l => ({ ...l }))
+  };
+}
+
+function applyView(id) {
+  const v = views.find(v => v.id === id);
+  if (!v) return;
+  const s = v.state || {};
+  document.getElementById('fs-open').checked   = !!s.open;
+  document.getElementById('fs-inprog').checked = !!s.inprog;
+  document.getElementById('fs-done').checked   = !!s.done;
+  updateStatusLabel();
+  document.getElementById('f-job').value     = s.job     || '';
+  document.getElementById('f-type').value    = s.type    || '';
+  document.getElementById('f-contact').value = s.contact || '';
+  document.getElementById('f-trade').value   = s.trade   || '';
+  document.getElementById('f-due').value     = s.due     || '';
+  document.getElementById('f-added').value   = s.added   || '';
+  document.getElementById('f-search').value  = s.search  || '';
+  sortLevels = (s.sort || []).map(l => ({ ...l }));
+  activeSortLevel = null;
+  showPage('tasks');
+  renderTasks();
+}
+
+function viewSummary(s) {
+  const f = [];
+  const statuses = [s.open && 'Open', s.inprog && 'In Progress', s.done && 'Completed'].filter(Boolean);
+  const defaultStatus = s.open && s.inprog && !s.done;
+  if (!defaultStatus) f.push(statuses.length ? statuses.join(' + ') : 'No statuses');
+  if (s.job)     f.push('Job ' + ((PRESET_JOBS.find(j => j.label === s.job) || {}).id || s.job));
+  if (s.type)    f.push('Type ' + s.type);
+  if (s.contact) f.push('Contact ' + s.contact);
+  if (s.trade)   f.push('Trade ' + s.trade);
+  if (s.due)     f.push('Due ' + fmtDate(s.due));
+  if (s.added)   f.push('Added ' + fmtDate(s.added));
+  if (s.search)  f.push('Search “' + s.search + '”');
+  const sort = (s.sort || []).map((l, i) => `${i + 1}. ${SORT_LABELS[l.key] || l.key} ${l.dir === 'asc' ? '▲' : '▼'}`);
+  return {
+    filters: f.length ? f.join(' · ') : 'Open + In Progress, nothing else narrowed',
+    sort:    sort.length ? sort.join('   ') : 'None — newest added first'
+  };
+}
+
+function renderViews() {
+  const grid = document.getElementById('views-grid');
+  if (!grid) return;
+  document.getElementById('views-empty').style.display = views.length ? 'none' : 'block';
+  grid.innerHTML = views.map(v => {
+    const s = viewSummary(v.state || {});
+    return `<div class="view-card">
+      <div class="view-name">${esc(v.name)}</div>
+      <div class="view-meta"><b>Filters:</b> ${esc(s.filters)}<br><b>Sort:</b> ${esc(s.sort)}</div>
+      <div class="view-actions">
+        <button class="btn-xs primary" onclick="applyView(${v.id})">Apply</button>
+        <button class="btn-xs" onclick="updateView(${v.id})" title="Overwrite this view with what the Tasks page is set to right now">Update</button>
+        <button class="btn-xs" onclick="renameView(${v.id})">Rename</button>
+        <button class="btn-xs danger" onclick="deleteView(${v.id})">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openSaveViewModal() {
+  const s = viewSummary(captureView());
+  document.getElementById('v-name').value = '';
+  document.getElementById('v-summary').innerHTML =
+    `<b>Filters:</b> ${esc(s.filters)}<br><b>Sort:</b> ${esc(s.sort)}`;
+  document.getElementById('view-modal').classList.add('open');
+  setTimeout(() => document.getElementById('v-name').focus(), 30);
+}
+
+function closeSaveViewModal() {
+  document.getElementById('view-modal').classList.remove('open');
+}
+
+function confirmSaveView() {
+  const name = document.getElementById('v-name').value.trim();
+  if (!name) { document.getElementById('v-name').focus(); return; }
+  views.push({ id: Date.now(), name, state: captureView() });
+  save('fs_views', views);
+  closeSaveViewModal();
+  renderViews();
+}
+
+function updateView(id) {
+  const v = views.find(v => v.id === id);
+  if (!v) return;
+  v.state = captureView();
+  save('fs_views', views);
+  renderViews();
+}
+
+function renameView(id) {
+  const v = views.find(v => v.id === id);
+  if (!v) return;
+  const name = prompt('Rename this view', v.name);
+  if (!name || !name.trim()) return;
+  v.name = name.trim();
+  save('fs_views', views);
+  renderViews();
+}
+
+function deleteView(id) {
+  const v = views.find(v => v.id === id);
+  if (!v) return;
+  if (!confirm(`Delete the saved view “${v.name}”?`)) return;
+  views = views.filter(v => v.id !== id);
+  save('fs_views', views);
+  renderViews();
 }
 
 // ─── TRADES LIST ──────────────────────────────────────────────────────────────
@@ -1048,11 +1410,12 @@ function renderContacts() {
 
 // ─── NAV ─────────────────────────────────────────────────────────────────────
 
-function showPage(name) {
+function showPage(name, el) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
-  event.currentTarget.classList.add('active');
+  const tab = el || document.querySelector(`.nav-tab[data-page="${name}"]`);
+  if (tab) tab.classList.add('active');
 }
 
 // ─── UTILS ────────────────────────────────────────────────────────────────────
@@ -1089,6 +1452,7 @@ function openEditModal(id) {
   document.getElementById('e-type').value    = t.type || '';
   document.getElementById('e-trade').value   = t.trade || '';
   document.getElementById('e-location').value= t.location || '';
+  document.getElementById('e-room').value    = t.room || '';
   document.getElementById('e-due').value     = t.due || '';
   document.getElementById('e-job').value     = '';
   renderEditJobTags();
@@ -1149,11 +1513,13 @@ function saveEdit() {
   t.type    = type;
   t.trade   = trade;
   t.location= document.getElementById('e-location').value.trim();
+  t.room    = document.getElementById('e-room').value.trim();
   t.task    = document.getElementById('e-task').value.trim();
   t.contact = document.getElementById('e-contact').value.trim();
   t.due     = document.getElementById('e-due').value;
   save('fs_tasks', tasks);
   populateLocationDatalist();
+  populateRoomDatalist();
   closeEditModal();
   renderTasks();
 }
@@ -1196,6 +1562,7 @@ function exportPDF() {
       <td style="padding:6px 10px;border:1px solid #ccc;white-space:nowrap">${esc(t.type)||'—'}</td>
       <td style="padding:6px 10px;border:1px solid #ccc;white-space:nowrap">${esc(t.trade)||'—'}</td>
       <td style="padding:6px 10px;border:1px solid #ccc;white-space:nowrap">${esc(t.location)||'—'}</td>
+      <td style="padding:6px 10px;border:1px solid #ccc;white-space:nowrap">${esc(t.room)||'—'}</td>
       <td style="padding:6px 10px;border:1px solid #ccc">${esc(t.task)||'—'}</td>
       <td style="padding:6px 10px;border:1px solid #ccc;white-space:nowrap">${esc(t.contact)||'—'}</td>
       <td style="padding:6px 10px;border:1px solid #ccc;white-space:nowrap">${t.due ? fmtDate(t.due) : '—'}</td>
@@ -1219,7 +1586,7 @@ function exportPDF() {
   <table>
     <thead><tr>
       <th style="width:22px"></th>
-      <th>Job</th><th>Type</th><th>Trade</th><th>Location</th><th>Task</th><th>Contact</th><th>Due</th><th>Status</th>
+      <th>Job</th><th>Type</th><th>Trade</th><th>Location/ Level</th><th>Room</th><th>Task</th><th>Contact</th><th>Due</th><th>Status</th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>
