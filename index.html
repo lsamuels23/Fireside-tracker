@@ -1122,7 +1122,10 @@ function updateSortIndicators() {
   renderSortStack();
 }
 
-function renderTasks() {
+// Exactly what the Tasks table shows: every filter applied, then the sort
+// hierarchy. The PDF export runs off this too, so the printout can't drift
+// away from what's on screen.
+function visibleTasks() {
   const showOpen  = document.getElementById('fs-open').checked;
   const showInProg= document.getElementById('fs-inprog').checked;
   const showDone  = document.getElementById('fs-done').checked;
@@ -1134,9 +1137,7 @@ function renderTasks() {
   const addedF   = document.getElementById('f-added').value;
   const terms    = searchTerms();
 
-  document.querySelector('.search-row').classList.toggle('has-text', terms.length > 0);
-
-  let list = tasks.filter(t => {
+  return tasks.filter(t => {
     if (t.status === 'open'        && !showOpen)   return false;
     if (t.status === 'in-progress' && !showInProg) return false;
     if (t.status === 'completed'   && !showDone)   return false;
@@ -1148,9 +1149,14 @@ function renderTasks() {
     if (addedF   && !t.added.startsWith(addedF))    return false;
     if (!matchesSearch(t, terms))                   return false;
     return true;
-  });
+  }).sort(compareTasks);
+}
 
-  list.sort(compareTasks);
+function renderTasks() {
+  const terms = searchTerms();
+  document.querySelector('.search-row').classList.toggle('has-text', terms.length > 0);
+
+  const list = visibleTasks();
   updateSortIndicators();
 
   const today = new Date().toISOString().slice(0,10);
@@ -1586,27 +1592,8 @@ document.getElementById('edit-modal').addEventListener('click', function(e) {
 // ─── EXPORT PDF ──────────────────────────────────────────────────────────────
 
 function exportPDF() {
-  const showOpen  = document.getElementById('fs-open').checked;
-  const showInProg= document.getElementById('fs-inprog').checked;
-  const showDone  = document.getElementById('fs-done').checked;
-  const jobF      = document.getElementById('f-job').value;
-  const typeF     = document.getElementById('f-type').value;
-  const contactF  = document.getElementById('f-contact').value;
-  const tradeF    = document.getElementById('f-trade').value;
-  const terms     = searchTerms();
-
-  let list = tasks.filter(t => {
-    if (t.status === 'open'        && !showOpen)   return false;
-    if (t.status === 'in-progress' && !showInProg) return false;
-    if (t.status === 'completed'   && !showDone)   return false;
-    if (jobF     && !(t.jobs||[]).includes(jobF))  return false;
-    if (typeF    && t.type    !== typeF)            return false;
-    if (contactF && t.contact !== contactF)         return false;
-    if (tradeF   && t.trade   !== tradeF)           return false;
-    if (!matchesSearch(t, terms))                   return false;
-    return true;
-  });
-
+  const list = visibleTasks();
+  const summary = viewSummary(captureView());
   const statusLabel = s => s === 'completed' ? 'Done' : s === 'in-progress' ? 'In Progress' : 'Open';
 
   const rows = list.map(t => {
@@ -1637,7 +1624,9 @@ function exportPDF() {
     @media print { body { padding: 0; } }
   </style></head><body>
   <h1>Fireside Tracker — Task Checklist</h1>
-  <p>Exported ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})} · ${list.length} task${list.length!==1?'s':''}</p>
+  <p>Exported ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})} · ${list.length} task${list.length!==1?'s':''}
+  <br><b>Filters:</b> ${esc(summary.filters)}
+  <br><b>Sort:</b> ${esc(summary.sort)}</p>
   <table>
     <thead><tr>
       <th style="width:22px"></th>
