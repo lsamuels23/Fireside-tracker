@@ -80,6 +80,7 @@
   .col-due { font-size: 13px; }
   .col-due.overdue { color: #e53e3e; font-weight: 600; }
   .col-added { font-size: 12px; color: #aaa; }
+  .col-updated { font-size: 12px; color: #aaa; }
   .col-completed { font-size: 12px; color: #aaa; }
   .btn-delete { background: none; border: none; cursor: pointer; color: #ccc; font-size: 16px; line-height: 1; padding: 4px; }
   .btn-delete:hover { color: #e53e3e; }
@@ -373,6 +374,7 @@
           <th class="sortable" data-sort="contact"   onclick="sortByColumn('contact', event)">Contact<span class="sort-level"></span><span class="sort-arrow">▼</span></th>
           <th class="sortable" data-sort="due"       onclick="sortByColumn('due', event)">Due<span class="sort-level"></span><span class="sort-arrow">▼</span></th>
           <th class="sortable" data-sort="added"     onclick="sortByColumn('added', event)">Added<span class="sort-level"></span><span class="sort-arrow">▼</span></th>
+          <th class="sortable" data-sort="updated"   onclick="sortByColumn('updated', event)">Updated<span class="sort-level"></span><span class="sort-arrow">▼</span></th>
           <th class="sortable" data-sort="completed" onclick="sortByColumn('completed', event)">Completed<span class="sort-level"></span><span class="sort-arrow">▼</span></th>
           <th></th>
         </tr>
@@ -630,6 +632,7 @@ async function init() {
     if (!('type' in t)) t.type = '';
     if (!('location' in t)) t.location = '';
     if (!('room' in t)) t.room = '';
+    if (!('updatedAt' in t)) t.updatedAt = null;
     return t;
   });
   save('fs_tasks', tasks);
@@ -865,7 +868,7 @@ function addTask() {
   if (trade) ensureTrade(trade);
   if (type)  ensureType(type);
   tasks.unshift({ id: Date.now(), jobs: [...pendingJobs], type, trade, location, room, task, contact, due,
-    status: 'open', startedAt: null, completedAt: null,
+    status: 'open', startedAt: null, completedAt: null, updatedAt: null,
     added: new Date().toISOString() });
   save('fs_tasks', tasks);
 
@@ -883,6 +886,7 @@ function cycleStatus(id) {
   const t = tasks.find(t => t.id === id);
   if (!t) return;
   const now = new Date().toISOString();
+  t.updatedAt = now;
   if (t.status === 'open') {
     t.status = 'in-progress';
     t.startedAt = now;
@@ -944,14 +948,14 @@ function clearSearch() {
 // ─── COLUMN SORTING ───────────────────────────────────────────────────────────
 
 // dates read best newest-first; text reads best A–Z
-const SORT_DEFAULT_ORDER = { added: 'desc', completed: 'desc', due: 'asc', status: 'asc',
+const SORT_DEFAULT_ORDER = { added: 'desc', updated: 'desc', completed: 'desc', due: 'asc', status: 'asc',
                              job: 'asc', type: 'asc', trade: 'asc', location: 'asc',
                              room: 'asc', task: 'asc', contact: 'asc' };
 
 const SORT_LABELS = { status: 'Status', job: 'Job', type: 'Type', trade: 'Trade',
                       location: 'Location/ Level', room: 'Room', task: 'Task',
                       contact: 'Contact', due: 'Due date', added: 'Date added',
-                      completed: 'Date completed' };
+                      updated: 'Date updated', completed: 'Date completed' };
 
 // Levels apply in order: level 1 decides, level 2 breaks its ties, and so on.
 let sortLevels  = [{ key: 'added', dir: 'desc' }];
@@ -959,6 +963,7 @@ let sortLevels  = [{ key: 'added', dir: 'desc' }];
 function sortValue(t, key) {
   switch (key) {
     case 'added':     return t.added || '';
+    case 'updated':   return t.updatedAt || '';
     case 'completed': return t.completedAt || '';
     case 'due':       return t.due || '';
     case 'job':       return (t.jobs || [])[0] || '';
@@ -1018,8 +1023,8 @@ function sortByColumn(key, ev) {
 }
 
 // Field order for the level dropdowns — roughly how the columns read across.
-const SORT_FIELDS = ['status','job','type','trade','location','room','task','contact','due','added','completed'];
-const DATE_FIELDS = ['due','added','completed'];
+const SORT_FIELDS = ['status','job','type','trade','location','room','task','contact','due','added','updated','completed'];
+const DATE_FIELDS = ['due','added','updated','completed'];
 
 // "A–Z" means more than "ascending" does when you're staring at a date column.
 function dirLabel(key, dir) {
@@ -1181,6 +1186,7 @@ function renderTasks() {
       <td>${esc(t.contact) || '<span style="color:#ccc">—</span>'}</td>
       <td class="col-due ${overdue}">${t.due ? fmtDate(t.due) : '<span style="color:#ccc">—</span>'}</td>
       <td class="col-added">${fmtDateTime(t.added)}</td>
+      <td class="col-updated">${t.updatedAt ? fmtDateTime(t.updatedAt) : '<span style="color:#ccc">—</span>'}</td>
       <td class="col-completed">
         ${t.completedAt ? fmtDateTime(t.completedAt) : '<span style="color:#ccc">—</span>'}
         <div style="margin-top:2px">${daysTracked(t)}</div>
@@ -1578,6 +1584,7 @@ function saveEdit() {
   t.task    = document.getElementById('e-task').value.trim();
   t.contact = document.getElementById('e-contact').value.trim();
   t.due     = document.getElementById('e-due').value;
+  t.updatedAt = new Date().toISOString();
   save('fs_tasks', tasks);
   populateLocationDatalist();
   populateRoomDatalist();
