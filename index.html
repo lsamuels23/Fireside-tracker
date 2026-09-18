@@ -600,6 +600,8 @@ let tradeTasks = {};
 let trades     = PRESET_TRADES;
 let types      = PRESET_TYPES;
 let views      = [];
+// The view the Tasks panel is currently showing, or null once it's been tweaked.
+let activeViewId = null;
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 
@@ -1158,6 +1160,7 @@ function visibleTasks() {
 }
 
 function renderTasks() {
+  syncViewPicker();
   const terms = searchTerms();
   document.querySelector('.search-row').classList.toggle('has-text', terms.length > 0);
 
@@ -1269,14 +1272,35 @@ function populateViewPicker() {
     ? '<option value="">Apply a saved view…</option>' +
       views.map(v => `<option value="${v.id}">${esc(v.name)}</option>`).join('')
     : '<option value="">No saved views yet</option>';
+  syncViewPicker(); // rebuilding the options wipes the selection — put it back
+}
+
+// One comparable string per snapshot, so a view can be checked against the panel.
+function viewStateKey(s) {
+  s = s || {};
+  return JSON.stringify([
+    !!s.open, !!s.inprog, !!s.done,
+    s.job || '', s.type || '', s.contact || '', s.trade || '',
+    s.due || '', s.added || '', s.search || '',
+    (s.sort || []).map(l => [l.key, l.dir])
+  ]);
+}
+
+// The picker names the view you're looking at, but only while the panel still
+// matches it — change a filter or the sort and it falls back to the prompt.
+function syncViewPicker() {
+  const sel = document.getElementById('f-view');
+  if (!sel) return;
+  const v = views.find(v => v.id === activeViewId);
+  if (!v || viewStateKey(v.state) !== viewStateKey(captureView())) activeViewId = null;
+  sel.value = activeViewId ? String(activeViewId) : '';
 }
 
 function applyView(id) {
   const v = views.find(v => v.id === id);
-  // the picker is a menu, not a status light: drop back to the prompt either way
-  const sel = document.getElementById('f-view');
-  if (sel) sel.value = '';
-  if (!v) return;
+  // picking the prompt itself changes nothing, so keep naming the active view
+  if (!v) return syncViewPicker();
+  activeViewId = id;
   const s = v.state || {};
   document.getElementById('fs-open').checked   = !!s.open;
   document.getElementById('fs-inprog').checked = !!s.inprog;
@@ -1350,7 +1374,9 @@ function closeSaveViewModal() {
 function confirmSaveView() {
   const name = document.getElementById('v-name').value.trim();
   if (!name) { document.getElementById('v-name').focus(); return; }
-  views.push({ id: Date.now(), name, state: captureView() });
+  const view = { id: Date.now(), name, state: captureView() };
+  views.push(view);
+  activeViewId = view.id; // a view saved off the panel is the one you're viewing
   save('fs_views', views);
   closeSaveViewModal();
   renderViews();
@@ -1360,6 +1386,7 @@ function updateView(id) {
   const v = views.find(v => v.id === id);
   if (!v) return;
   v.state = captureView();
+  activeViewId = id; // the panel now is this view, so let the picker say so
   save('fs_views', views);
   renderViews();
 }
