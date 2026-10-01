@@ -181,6 +181,20 @@
   .sort-none { font-size: 12px; color: #bbb; margin-bottom: 7px; }
   .sort-level { font-size: 9px; vertical-align: super; margin-left: 1px; opacity: .85; }
   .view-picker-row { margin-bottom: 16px; }
+
+  /* Job multi-select: a select-looking button that opens a checklist, a dot marks each picked job */
+  .multi-select { position: relative; }
+  .multi-btn { border: 1px solid #ddd; border-radius: 6px; padding: 8px 26px 8px 10px; font-size: 13px; color: #333; background: #fff; width: 100%; min-width: 130px; max-width: 220px; text-align: left; cursor: pointer; outline: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: relative; }
+  .multi-btn::after { content: '▾'; position: absolute; right: 9px; top: 50%; transform: translateY(-50%); font-size: 10px; color: #888; }
+  .multi-btn:focus, .multi-select.open .multi-btn { border-color: #3b82f6; }
+  .multi-panel { display: none; position: absolute; top: calc(100% + 4px); left: 0; z-index: 50; background: #fff; border: 1px solid #e3e3e3; border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,.12); padding: 6px 0; min-width: 100%; max-height: 340px; overflow-y: auto; }
+  .multi-select.open .multi-panel { display: block; }
+  .multi-opt { display: flex; align-items: center; gap: 8px; padding: 7px 14px 7px 10px; font-size: 13px; color: #333; cursor: pointer; white-space: nowrap; user-select: none; }
+  .multi-opt:hover { background: #f2f8ff; }
+  .multi-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .multi-opt.on .multi-dot { background: #1a1a2e; }
+  .multi-opt.on { font-weight: 600; }
+  .multi-sep { height: 1px; background: #e5e5e5; margin: 5px 12px; }
   .view-picker { border: 1px solid #3b82f6; color: #3b82f6; background: #fff; border-radius: 6px; padding: 7px 10px; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; max-width: 260px; }
   .view-picker:hover:not(:disabled) { background: #eef4ff; }
   .view-picker:disabled { border-color: #e0e0e0; color: #aaa; cursor: default; }
@@ -307,9 +321,10 @@
       </div>
       <div class="form-field">
         <label>Job</label>
-        <select id="f-job" onchange="renderTasks()">
-          <option value="">All jobs</option>
-        </select>
+        <div class="multi-select" id="f-job">
+          <button type="button" class="multi-btn" id="f-job-btn" onclick="toggleJobFilterPanel(event)" aria-haspopup="true" aria-expanded="false">All jobs</button>
+          <div class="multi-panel" id="f-job-panel" onclick="event.stopPropagation()"></div>
+        </div>
       </div>
       <div class="form-field">
         <label>Type</label>
@@ -757,12 +772,54 @@ function populateRoleDatalist() {
   document.getElementById('role-list').innerHTML = roles.map(r => `<option value="${r}">`).join('');
 }
 
+// Job filter takes any number of jobs; none picked means all jobs.
+let jobFilter = [];
+
 function populateJobFilter() {
-  const sel = document.getElementById('f-job');
-  const cur = sel.value;
-  sel.innerHTML = '<option value="">All jobs</option>' +
-    PRESET_JOBS.map(j => `<option value="${j.label}">${j.label}</option>`).join('');
-  sel.value = cur;
+  const panel = document.getElementById('f-job-panel');
+  panel.innerHTML =
+    `<div class="multi-opt ${jobFilter.length ? '' : 'on'}" onclick="setJobFilter([])"><span class="multi-dot"></span>All jobs</div>
+     <div class="multi-sep"></div>` +
+    PRESET_JOBS.map((j, i) =>
+      `<div class="multi-opt ${jobFilter.includes(j.label) ? 'on' : ''}" onclick="toggleJobFilter(${i})"><span class="multi-dot"></span>${esc(j.label)}</div>`
+    ).join('');
+  const picked = PRESET_JOBS.filter(j => jobFilter.includes(j.label));
+  const btn = document.getElementById('f-job-btn');
+  btn.textContent = picked.length ? picked.map(j => j.id).join(', ') : 'All jobs';
+  btn.title = picked.length ? picked.map(j => j.label).join('\n') : 'All jobs';
+}
+
+function setJobFilter(labels) {
+  // keep the list order, and drop anything that's no longer a preset job
+  jobFilter = PRESET_JOBS.map(j => j.label).filter(l => (labels || []).includes(l));
+  populateJobFilter();
+  renderTasks();
+}
+
+function toggleJobFilter(i) {
+  const label = PRESET_JOBS[i].label;
+  setJobFilter(jobFilter.includes(label)
+    ? jobFilter.filter(l => l !== label)
+    : [...jobFilter, label]);
+}
+
+function toggleJobFilterPanel(e) {
+  e.stopPropagation();
+  const open = document.getElementById('f-job').classList.toggle('open');
+  document.getElementById('f-job-btn').setAttribute('aria-expanded', String(open));
+}
+
+function closeJobFilterPanel() {
+  document.getElementById('f-job').classList.remove('open');
+  document.getElementById('f-job-btn').setAttribute('aria-expanded', 'false');
+}
+
+document.addEventListener('click', closeJobFilterPanel);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeJobFilterPanel(); });
+
+// Saved views from before multi-select kept a single job string.
+function viewJobs(s) {
+  return Array.isArray(s.jobs) ? s.jobs : (s.job ? [s.job] : []);
 }
 
 function populateContactFilter() {
@@ -1136,7 +1193,7 @@ function visibleTasks() {
   const showOpen  = document.getElementById('fs-open').checked;
   const showInProg= document.getElementById('fs-inprog').checked;
   const showDone  = document.getElementById('fs-done').checked;
-  const jobF     = document.getElementById('f-job').value;
+  const jobF     = jobFilter;
   const typeF    = document.getElementById('f-type').value;
   const contactF = document.getElementById('f-contact').value;
   const tradeF   = document.getElementById('f-trade').value;
@@ -1148,7 +1205,7 @@ function visibleTasks() {
     if (t.status === 'open'        && !showOpen)   return false;
     if (t.status === 'in-progress' && !showInProg) return false;
     if (t.status === 'completed'   && !showDone)   return false;
-    if (jobF     && !(t.jobs||[]).includes(jobF))  return false;
+    if (jobF.length && !(t.jobs||[]).some(j => jobF.includes(j))) return false;
     if (typeF    && t.type    !== typeF)            return false;
     if (contactF && t.contact !== contactF)         return false;
     if (tradeF   && t.trade   !== tradeF)           return false;
@@ -1210,7 +1267,8 @@ function clearFilterFields() {
   document.getElementById('fs-inprog').checked = true;
   document.getElementById('fs-done').checked   = false;
   updateStatusLabel();
-  document.getElementById('f-job').value     = '';
+  jobFilter = [];
+  populateJobFilter();
   document.getElementById('f-type').value    = '';
   document.getElementById('f-contact').value = '';
   document.getElementById('f-search').value  = '';
@@ -1252,7 +1310,7 @@ function captureView() {
     open:    document.getElementById('fs-open').checked,
     inprog:  document.getElementById('fs-inprog').checked,
     done:    document.getElementById('fs-done').checked,
-    job:     document.getElementById('f-job').value,
+    jobs:    [...jobFilter],
     type:    document.getElementById('f-type').value,
     contact: document.getElementById('f-contact').value,
     trade:   document.getElementById('f-trade').value,
@@ -1280,7 +1338,7 @@ function viewStateKey(s) {
   s = s || {};
   return JSON.stringify([
     !!s.open, !!s.inprog, !!s.done,
-    s.job || '', s.type || '', s.contact || '', s.trade || '',
+    viewJobs(s).slice().sort(), s.type || '', s.contact || '', s.trade || '',
     s.due || '', s.added || '', s.search || '',
     (s.sort || []).map(l => [l.key, l.dir])
   ]);
@@ -1306,7 +1364,8 @@ function applyView(id) {
   document.getElementById('fs-inprog').checked = !!s.inprog;
   document.getElementById('fs-done').checked   = !!s.done;
   updateStatusLabel();
-  document.getElementById('f-job').value     = s.job     || '';
+  jobFilter = PRESET_JOBS.map(j => j.label).filter(l => viewJobs(s).includes(l));
+  populateJobFilter();
   document.getElementById('f-type').value    = s.type    || '';
   document.getElementById('f-contact').value = s.contact || '';
   document.getElementById('f-trade').value   = s.trade   || '';
@@ -1324,7 +1383,9 @@ function viewSummary(s) {
   const statuses = [s.open && 'Open', s.inprog && 'In Progress', s.done && 'Completed'].filter(Boolean);
   const defaultStatus = s.open && s.inprog && !s.done;
   if (!defaultStatus) f.push(statuses.length ? statuses.join(' + ') : 'No statuses');
-  if (s.job)     f.push('Job ' + ((PRESET_JOBS.find(j => j.label === s.job) || {}).id || s.job));
+  const jobs = viewJobs(s);
+  if (jobs.length) f.push((jobs.length > 1 ? 'Jobs ' : 'Job ') +
+    jobs.map(l => (PRESET_JOBS.find(j => j.label === l) || {}).id || l).join(', '));
   if (s.type)    f.push('Type ' + s.type);
   if (s.contact) f.push('Contact ' + s.contact);
   if (s.trade)   f.push('Trade ' + s.trade);
