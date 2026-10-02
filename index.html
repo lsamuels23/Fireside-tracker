@@ -608,8 +608,8 @@ function storeLocal(key, val) {
   try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) { console.warn('localStorage unavailable', e); }
 }
 
-// Saves that haven't reached Supabase yet, by key. A newer save of the same key
-// replaces the queued one, so only the latest copy is ever sent.
+// Writes that haven't reached Supabase yet, by key ('fs_contacts', 'task:<id>', …).
+// A newer write to the same key replaces the queued one, so only the latest is sent.
 const unsynced = {};
 let saveSeq = 0;
 let syncing = false;
@@ -617,10 +617,45 @@ let syncing = false;
 // screen may be stale, so nothing is pushed — it would overwrite newer work.
 let remoteLoaded = false;
 
+function queueWrite(key, send) {
+  unsynced[key] = { send, seq: ++saveSeq };
+  flushSaves();
+}
+
+// Contacts, trades, types and views: still one app_state row per list.
 function save(key, val) {
   storeLocal(key, val);
-  unsynced[key] = { val: JSON.parse(JSON.stringify(val)), seq: ++saveSeq };
-  flushSaves();
+  const value = JSON.parse(JSON.stringify(val));
+  queueWrite(key, () => _sb.from('app_state')
+    .upsert({ key, value, updated_at: new Date().toISOString() }));
+}
+
+// Tasks: one row each, so saving a task never touches anyone else's edits.
+// Deleting only flags the row, so a device with an old copy can't bring it back.
+function saveTask(t, deleted = false) {
+  storeLocal('fs_tasks', tasks);
+  const row = { ...taskToRow(t), deleted };
+  queueWrite('task:' + t.id, () => _sb.from('tasks').upsert(row));
+}
+
+function taskToRow(t) {
+  return {
+    id: t.id, jobs: t.jobs || [], type: t.type || '', trade: t.trade || '',
+    location: t.location || '', room: t.room || '', task: t.task || '',
+    contact: t.contact || '', due: t.due || null, status: t.status || 'open',
+    started_at: t.startedAt || null, completed_at: t.completedAt || null,
+    added_at: t.added || new Date().toISOString(), updated_at: t.updatedAt || null,
+  };
+}
+
+function rowToTask(r) {
+  return {
+    id: Number(r.id), jobs: r.jobs || [], type: r.type, trade: r.trade,
+    location: r.location, room: r.room, task: r.task, contact: r.contact,
+    due: r.due || '', status: r.status,
+    startedAt: r.started_at, completedAt: r.completed_at,
+    added: r.added_at, updatedAt: r.updated_at,
+  };
 }
 
 async function flushSaves() {
@@ -630,9 +665,8 @@ async function flushSaves() {
   try {
     let key;
     while ((key = Object.keys(unsynced)[0])) {
-      const { val, seq } = unsynced[key];
-      const { error } = await _sb.from('app_state')
-        .upsert({ key, value: val, updated_at: new Date().toISOString() });
+      const { send, seq } = unsynced[key];
+      const { error } = await send();
       if (error) throw error;
       // leave it queued if it was saved again while this upload was in flight
       if (unsynced[key].seq === seq) delete unsynced[key];
@@ -650,7 +684,68 @@ async function loadAll() {
   if (error) throw error;
   const remote = {};
   (data || []).forEach(r => remote[r.key] = r.value);
+  // The old all-tasks blob is kept in app_state as a backup only.
+  delete remote.fs_tasks;
+  remote.fs_tasks = await loadTasks();
   return remote;
+}
+
+async function loadTasks() {
+  const rows = [];
+  const PAGE = 1000; // Supabase caps each response at 1000 rows
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await _sb.from('tasks').select('*')
+      .eq('deleted', false).order('id', { ascending: false })
+      .range(from, from + PAGE - 1);
+    if (error) throw error;
+    rows.push(...data);
+    if (data.length < PAGE) break;
+  }
+  return rows.map(rowToTask);
+}
+
+// ─── LIVE UPDATES ────────────────────────────────────────────────────────────
+// Other devices' task edits arrive within seconds instead of on the next refresh.
+
+let liveConnectedOnce = false;
+
+function subscribeTasks() {
+  _sb.channel('tasks-live')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, payload => {
+      const row = payload.new;
+      if (!row || row.id == null) return;
+      // a local edit to this task is still uploading; it's newer, so it wins
+      if (unsynced['task:' + row.id]) return;
+      const id = Number(row.id);
+      const i = tasks.findIndex(t => t.id === id);
+      if (row.deleted) { if (i >= 0) tasks.splice(i, 1); }
+      else if (i >= 0) tasks[i] = rowToTask(row);
+      else {
+        // newest first, the same order the list is loaded in
+        const at = tasks.findIndex(t => t.id < id);
+        tasks.splice(at < 0 ? tasks.length : at, 0, rowToTask(row));
+      }
+      storeLocal('fs_tasks', tasks);
+      renderTasksLive();
+    })
+    .subscribe(status => {
+      if (status !== 'SUBSCRIBED') return;
+      // after a dropped connection, catch up on anything missed while it was down
+      if (liveConnectedOnce) refreshFromServer(true);
+      liveConnectedOnce = true;
+    });
+}
+
+let liveRenderQueued = false;
+function renderTasksLive() {
+  if (liveRenderQueued) return;
+  liveRenderQueued = true;
+  requestAnimationFrame(() => {
+    liveRenderQueued = false;
+    populateLocationDatalist();
+    populateRoomDatalist();
+    renderTasks();
+  });
 }
 
 function showSyncStatus() {
@@ -670,8 +765,8 @@ function showSyncStatus() {
 }
 
 // ─── REFRESH FROM SERVER ─────────────────────────────────────────────────────
-// The page only fetches on load, and tablets keep tabs open for days, so pull
-// a fresh copy whenever the app comes back into view and every minute or so.
+// Live updates cover task edits; this is the backstop for contacts, trades and
+// views, and for anything missed while a tablet slept or lost its connection.
 
 let lastPull = 0;
 let pulling = false;
@@ -736,7 +831,7 @@ let activeViewId = null;
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 
 // Fill the in-memory state from the server's copy (or this device's
-// localStorage for anything missing). Only writes back if a migration changed something.
+// localStorage for anything missing).
 function applyState(remote) {
   const get = (key, def) => (remote[key] !== undefined ? remote[key] : load(key, def));
 
@@ -751,30 +846,6 @@ function applyState(remote) {
   Object.entries(remote).forEach(([k, v]) => storeLocal(k, v));
 
   if (!contacts) { contacts = PRESET_CONTACTS; save('fs_contacts', contacts); }
-
-  const before = JSON.stringify(tasks);
-  tasks = migrateTasks(tasks);
-  if (JSON.stringify(tasks) !== before) save('fs_tasks', tasks);
-}
-
-function migrateTasks(list) {
-  return list.map(t => {
-    if (!('status' in t)) {
-      t.status = t.done ? 'completed' : 'open';
-      t.startedAt  = null;
-      t.completedAt = t.completed || null;
-      delete t.done; delete t.completed;
-    }
-    if (!('jobs' in t)) {
-      t.jobs = t.job ? [t.job] : [];
-      delete t.job;
-    }
-    if (!('type' in t)) t.type = '';
-    if (!('location' in t)) t.location = '';
-    if (!('room' in t)) t.room = '';
-    if (!('updatedAt' in t)) t.updatedAt = null;
-    return t;
-  });
 }
 
 function renderAll() {
@@ -808,6 +879,7 @@ async function init() {
   applyState(remote);
   renderAll();
   showSyncStatus();
+  subscribeTasks();
 
   document.getElementById('v-name').addEventListener('keydown', e => {
     if (e.key === 'Enter') confirmSaveView();
@@ -1068,7 +1140,7 @@ function addTask() {
   tasks.unshift({ id: Date.now(), jobs: [...pendingJobs], type, trade, location, room, task, contact, due,
     status: 'open', startedAt: null, completedAt: null, updatedAt: null,
     added: new Date().toISOString() });
-  save('fs_tasks', tasks);
+  saveTask(tasks[0]);
 
   pendingJobs = [];
   document.getElementById('job-tags-form').innerHTML = '';
@@ -1097,13 +1169,15 @@ function cycleStatus(id) {
     t.startedAt = null;
     t.completedAt = null;
   }
-  save('fs_tasks', tasks);
+  saveTask(t);
   renderTasks();
 }
 
 function deleteTask(id) {
+  const t = tasks.find(t => t.id === id);
+  if (!t) return;
   tasks = tasks.filter(t => t.id !== id);
-  save('fs_tasks', tasks);
+  saveTask(t, true);
   renderTasks();
 }
 
@@ -1812,7 +1886,7 @@ function saveEdit() {
   t.contact = document.getElementById('e-contact').value.trim();
   t.due     = document.getElementById('e-due').value;
   t.updatedAt = new Date().toISOString();
-  save('fs_tasks', tasks);
+  saveTask(t);
   populateLocationDatalist();
   populateRoomDatalist();
   closeEditModal();
