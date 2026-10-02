@@ -233,10 +233,16 @@
   .btn-edit:hover { color:#3b82f6; }
   .btn-export { background:#2d6a4f; color:#fff; border:none; border-radius:6px; padding:8px 16px; font-size:13px; font-weight:600; cursor:pointer; margin-left:auto; display:block; margin-bottom:12px; }
   .btn-export:hover { background:#1b4332; }
+  .sync-status { display:none; position:fixed; left:50%; bottom:16px; transform:translateX(-50%); z-index:600; max-width:calc(100vw - 32px); padding:10px 16px; border-radius:8px; font-size:13px; font-weight:600; box-shadow:0 2px 10px rgba(0,0,0,.15); }
+  .sync-status.show { display:block; }
+  .sync-status.warn { background:#fff3e0; color:#e65100; border:1px solid #ffcc80; }
+  .sync-status.error { background:#fdecea; color:#c62828; border:1px solid #f5a9a3; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+
+<div id="sync-status" class="sync-status" role="status" aria-live="polite"></div>
 
 <div class="nav">
   <div class="nav-logo">🔥 Fireside</div>
@@ -597,17 +603,126 @@ function load(key, def) {
   try { return JSON.parse(localStorage.getItem(key)) ?? def; } catch { return def; }
 }
 
+// localStorage can throw (private browsing, storage full); it is only a fallback copy
+function storeLocal(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) { console.warn('localStorage unavailable', e); }
+}
+
+// Saves that haven't reached Supabase yet, by key. A newer save of the same key
+// replaces the queued one, so only the latest copy is ever sent.
+const unsynced = {};
+let saveSeq = 0;
+let syncing = false;
+// False until this session has pulled the server's copy. Until then the data on
+// screen may be stale, so nothing is pushed — it would overwrite newer work.
+let remoteLoaded = false;
+
 function save(key, val) {
-  localStorage.setItem(key, JSON.stringify(val));
-  _sb.from('app_state').upsert({ key, value: val, updated_at: new Date().toISOString() }).then(() => {});
+  storeLocal(key, val);
+  unsynced[key] = { val: JSON.parse(JSON.stringify(val)), seq: ++saveSeq };
+  flushSaves();
+}
+
+async function flushSaves() {
+  if (syncing || !remoteLoaded) { showSyncStatus(); return; }
+  syncing = true;
+  showSyncStatus();
+  try {
+    let key;
+    while ((key = Object.keys(unsynced)[0])) {
+      const { val, seq } = unsynced[key];
+      const { error } = await _sb.from('app_state')
+        .upsert({ key, value: val, updated_at: new Date().toISOString() });
+      if (error) throw error;
+      // leave it queued if it was saved again while this upload was in flight
+      if (unsynced[key].seq === seq) delete unsynced[key];
+    }
+  } catch (e) {
+    console.error('Save to server failed, will retry', e);
+  } finally {
+    syncing = false;
+    showSyncStatus();
+  }
 }
 
 async function loadAll() {
-  const { data } = await _sb.from('app_state').select('key, value');
+  const { data, error } = await _sb.from('app_state').select('key, value');
+  if (error) throw error;
   const remote = {};
   (data || []).forEach(r => remote[r.key] = r.value);
   return remote;
 }
+
+function showSyncStatus() {
+  const el = document.getElementById('sync-status');
+  if (!el) return;
+  const pending = Object.keys(unsynced).length > 0;
+  let msg = '', cls = '';
+  if (!remoteLoaded) {
+    msg = "Can't reach the server — showing this device's last copy. Changes made now won't be saved.";
+    cls = 'error';
+  } else if (pending && !syncing) {
+    msg = 'Changes not saved yet — retrying. Keep this page open.';
+    cls = 'warn';
+  }
+  el.textContent = msg;
+  el.className = msg ? 'sync-status show ' + cls : 'sync-status';
+}
+
+// ─── REFRESH FROM SERVER ─────────────────────────────────────────────────────
+// The page only fetches on load, and tablets keep tabs open for days, so pull
+// a fresh copy whenever the app comes back into view and every minute or so.
+
+let lastPull = 0;
+let pulling = false;
+
+function userIsBusy() {
+  if (document.querySelector('.modal-overlay.open')) return true;
+  if (document.getElementById('f-job').classList.contains('open')) return true;
+  const a = document.activeElement;
+  return !!a && ['INPUT', 'TEXTAREA', 'SELECT'].includes(a.tagName);
+}
+
+async function refreshFromServer(force) {
+  if (pulling || document.hidden) return;
+  if (!force && Date.now() - lastPull < 10000) return;
+  if (remoteLoaded && Object.keys(unsynced).length) {
+    // push our own edits first so the pull doesn't undo them
+    await flushSaves();
+    if (Object.keys(unsynced).length) return;
+  }
+  if (remoteLoaded && userIsBusy()) return;
+  pulling = true;
+  try {
+    const remote = await loadAll();
+    lastPull = Date.now();
+    if (!remoteLoaded) {
+      // Edits made while we couldn't reach the server were on a stale copy;
+      // the banner warned they wouldn't be saved, so drop them.
+      Object.keys(unsynced).forEach(k => delete unsynced[k]);
+      remoteLoaded = true;
+    }
+    applyState(remote);
+    renderAll();
+  } catch (e) {
+    console.error('Refresh from server failed', e);
+  } finally {
+    pulling = false;
+    showSyncStatus();
+  }
+}
+
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshFromServer(); });
+window.addEventListener('focus', () => refreshFromServer());
+window.addEventListener('online', () => refreshFromServer(true));
+// restored from the back/forward cache: the page in memory may be hours old
+window.addEventListener('pageshow', e => { if (e.persisted) refreshFromServer(true); });
+setInterval(() => refreshFromServer(), 60000);
+setInterval(() => { if (Object.keys(unsynced).length) flushSaves(); }, 15000);
+
+window.addEventListener('beforeunload', e => {
+  if (remoteLoaded && Object.keys(unsynced).length) { e.preventDefault(); e.returnValue = ''; }
+});
 
 let tasks      = [];
 let contacts   = null;
@@ -620,9 +735,9 @@ let activeViewId = null;
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 
-async function init() {
-  // load from Supabase first, fall back to localStorage
-  const remote = await loadAll();
+// Fill the in-memory state from the server's copy (or this device's
+// localStorage for anything missing). Only writes back if a migration changed something.
+function applyState(remote) {
   const get = (key, def) => (remote[key] !== undefined ? remote[key] : load(key, def));
 
   tasks    = get('fs_tasks', []);
@@ -632,10 +747,18 @@ async function init() {
   types    = get('fs_types',  PRESET_TYPES);
   views    = get('fs_views',  []);
 
+  // keep localStorage in step with the server, so an offline load shows the latest copy
+  Object.entries(remote).forEach(([k, v]) => storeLocal(k, v));
+
   if (!contacts) { contacts = PRESET_CONTACTS; save('fs_contacts', contacts); }
 
-  // migrate old tasks
-  tasks = tasks.map(t => {
+  const before = JSON.stringify(tasks);
+  tasks = migrateTasks(tasks);
+  if (JSON.stringify(tasks) !== before) save('fs_tasks', tasks);
+}
+
+function migrateTasks(list) {
+  return list.map(t => {
     if (!('status' in t)) {
       t.status = t.done ? 'completed' : 'open';
       t.startedAt  = null;
@@ -652,8 +775,9 @@ async function init() {
     if (!('updatedAt' in t)) t.updatedAt = null;
     return t;
   });
-  save('fs_tasks', tasks);
+}
 
+function renderAll() {
   populateJobDatalist();
   populateContactDatalist();
   populateTradeDatalist();
@@ -669,6 +793,21 @@ async function init() {
   renderContacts();
   renderTradeList();
   renderViews();
+}
+
+async function init() {
+  // load from Supabase first; if that fails, show this device's last copy
+  let remote = {};
+  try {
+    remote = await loadAll();
+    remoteLoaded = true;
+    lastPull = Date.now();
+  } catch (e) {
+    console.error('Initial load from server failed', e);
+  }
+  applyState(remote);
+  renderAll();
+  showSyncStatus();
 
   document.getElementById('v-name').addEventListener('keydown', e => {
     if (e.key === 'Enter') confirmSaveView();
