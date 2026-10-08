@@ -1930,6 +1930,7 @@ function exportPDF() {
     th { background: #f0f2f5; padding: 7px 10px; border: 1px solid #ccc; text-align: left; font-size: 9pt; text-transform: uppercase; letter-spacing: .8px; }
     td { font-size: 12pt; }
     @media print { body { padding: 0; } }
+    @page { @bottom-right { content: "Page " counter(page) " of " counter(pages); font-family: Arial, sans-serif; font-size: 9pt; color: #666; } }
   </style></head><body>
   <h1>Fireside Tracker — Task Checklist</h1>
   <p>Exported ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})} · ${list.length} task${list.length!==1?'s':''}
