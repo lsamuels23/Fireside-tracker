@@ -79,9 +79,15 @@
   .job-badge.ember { background: #fce8e8; color: #c0392b; }
   .col-due { font-size: 13px; }
   .col-due.overdue { color: #e53e3e; font-weight: 600; }
-  .col-added { font-size: 12px; color: #aaa; }
-  .col-updated { font-size: 12px; color: #aaa; }
-  .col-completed { font-size: 12px; color: #aaa; }
+  .col-added { font-size: 12px; color: #aaa; white-space: nowrap; }
+  .col-updated { font-size: 12px; color: #aaa; white-space: nowrap; }
+  .col-completed { font-size: 12px; color: #aaa; white-space: nowrap; }
+  /* Desktop: wider page, slimmer side margins, and a roomier Task column */
+  @media (min-width: 701px) {
+    .page { max-width: 1600px; padding: 24px 16px; }
+    .tasks-table .col-task { min-width: 180px; }
+    .tasks-table th, .tasks-table td { padding-left: 8px; padding-right: 8px; }
+  }
   .btn-delete { background: none; border: none; cursor: pointer; color: #ccc; font-size: 16px; line-height: 1; padding: 4px; }
   .btn-delete:hover { color: #e53e3e; }
   .empty-state { text-align: center; color: #bbb; padding: 40px 0; font-size: 13px; }
@@ -1455,7 +1461,7 @@ function renderTasks() {
       <td>${t.trade ? `<span style="font-size:12px;background:#f0f7ee;color:#2d6a4f;border-radius:10px;padding:2px 9px;font-weight:600">${esc(t.trade)}</span>` : '<span style="color:#ccc">—</span>'}</td>
       <td>${t.location ? esc(t.location) : '<span style="color:#ccc">—</span>'}</td>
       <td>${t.room ? esc(t.room) : '<span style="color:#ccc">—</span>'}</td>
-      <td>${esc(t.task)}</td>
+      <td class="col-task">${esc(t.task)}</td>
       <td>${esc(t.contact) || '<span style="color:#ccc">—</span>'}</td>
       <td class="col-due ${overdue}">${t.due ? fmtDate(t.due) : '<span style="color:#ccc">—</span>'}</td>
       <td class="col-added">${fmtDateTime(t.added)}</td>
@@ -1808,7 +1814,8 @@ function fmtDateTime(iso) {
   let h = d.getHours(), ampm = h >= 12 ? 'PM' : 'AM';
   h = h % 12 || 12;
   const min = String(d.getMinutes()).padStart(2,'0');
-  return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()} ${h}:${min} ${ampm}`;
+  // date on one line, time on the next
+  return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}<br>${h}:${min} ${ampm}`;
 }
 
 // ─── EDIT MODAL ──────────────────────────────────────────────────────────────
