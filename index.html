@@ -314,7 +314,7 @@
     </div>
     <div class="card-body" id="filters-body">
     <div class="view-picker-row">
-      <select class="view-picker" id="f-view" onchange="applyView(Number(this.value))" title="Load a saved view"></select>
+      <select class="view-picker" id="f-view" onchange="applyView(this.value)" title="Load a saved view"></select>
     </div>
     <div class="filters">
       <div class="form-field">
@@ -1538,11 +1538,9 @@ function captureView() {
 function populateViewPicker() {
   const sel = document.getElementById('f-view');
   if (!sel) return;
-  sel.disabled = !views.length;
-  sel.innerHTML = views.length
-    ? '<option value="">Apply a saved view…</option>' +
-      views.map(v => `<option value="${v.id}">${esc(v.name)}</option>`).join('')
-    : '<option value="">No saved views yet</option>';
+  sel.innerHTML = '<option value="" disabled hidden>Apply a saved view…</option>' +
+    '<option value="none">None (default)</option>' +
+    views.map(v => `<option value="${v.id}">${esc(v.name)}</option>`).join('');
   syncViewPicker(); // rebuilding the options wipes the selection — put it back
 }
 
@@ -1563,11 +1561,19 @@ function syncViewPicker() {
   const sel = document.getElementById('f-view');
   if (!sel) return;
   const v = views.find(v => v.id === activeViewId);
-  if (!v || viewStateKey(v.state) !== viewStateKey(captureView())) activeViewId = null;
-  sel.value = activeViewId ? String(activeViewId) : '';
+  const current = viewStateKey(captureView());
+  if (!v || viewStateKey(v.state) !== current) activeViewId = null;
+  sel.value = activeViewId ? String(activeViewId)
+            : current === viewStateKey(DEFAULT_VIEW_STATE) ? 'none' : '';
 }
 
+// What the panel looks like after Clear filters & sort.
+const DEFAULT_VIEW_STATE = { open: true, inprog: true, done: false, jobs: [], sort: [] };
+
 function applyView(id) {
+  // None puts the panel back to its defaults
+  if (id === 'none') { activeViewId = null; showPage('tasks'); return clearFiltersAndSort(); }
+  id = Number(id);
   const v = views.find(v => v.id === id);
   // picking the prompt itself changes nothing, so keep naming the active view
   if (!v) return syncViewPicker();
