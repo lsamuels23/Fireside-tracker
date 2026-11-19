@@ -63,6 +63,8 @@
   .search-row.has-text .search-clear { display: block; }
 
   /* Tasks table */
+  /* Wide table scrolls sideways inside its card instead of spilling past it */
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .tasks-table { width: 100%; border-collapse: collapse; }
   .tasks-table th { text-align: left; font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #aaa; text-transform: uppercase; padding: 0 12px 10px; border-bottom: 1px solid #eee; }
   .tasks-table th:first-child { width: 36px; }
@@ -405,6 +407,7 @@
       <div class="card-title" style="margin-bottom:0">Tasks</div>
       <button class="btn-export" style="margin:0" onclick="exportPDF()">Export Checklist PDF</button>
     </div>
+    <div class="table-scroll">
     <table class="tasks-table">
       <thead>
         <tr>
@@ -427,6 +430,7 @@
       </thead>
       <tbody id="tasks-body"></tbody>
     </table>
+    </div>
     <div class="empty-state" id="tasks-empty" style="display:none">No tasks match your filters.</div>
   </div>
 </div>
