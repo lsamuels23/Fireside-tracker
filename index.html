@@ -35,13 +35,14 @@
   .card-body.hidden { display: none; }
 
   /* Task form */
-  .task-form { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1.4fr 1fr 165px auto; gap: 10px; align-items: start; }
+  .task-form { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1.4fr 1.2fr 1fr 1fr 165px auto; gap: 10px; align-items: start; }
   .task-form .hint { grid-column: 1/-1; font-size: 12px; color: #aaa; margin-top: -4px; }
   .form-field { display: flex; flex-direction: column; gap: 4px; }
   .form-field label { font-size: 11px; color: #888; font-weight: 500; }
-  .form-field input, .form-field select { border: 1px solid #ddd; border-radius: 6px; padding: 8px 10px; font-size: 13px; color: #333; outline: none; transition: border .15s; background: #fff; width: 100%; }
-  .form-field input:focus, .form-field select:focus { border-color: #3b82f6; }
-  .form-field input::placeholder { color: #bbb; }
+  .form-field input, .form-field select, .form-field textarea { border: 1px solid #ddd; border-radius: 6px; padding: 8px 10px; font-size: 13px; color: #333; outline: none; transition: border .15s; background: #fff; width: 100%; }
+  .form-field input:focus, .form-field select:focus, .form-field textarea:focus { border-color: #3b82f6; }
+  .form-field input::placeholder, .form-field textarea::placeholder { color: #bbb; }
+  .form-field textarea { font-family: inherit; resize: vertical; min-height: 64px; }
   .btn-add { background: #3b82f6; color: #fff; border: none; border-radius: 6px; padding: 8px 18px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; align-self: flex-end; height: 36px; }
   .btn-add:hover { background: #2563eb; }
 
@@ -77,6 +78,7 @@
   .task-cb { width: 18px; height: 18px; cursor: pointer; accent-color: #3b82f6; }
   .job-badge { display: inline-block; background: #e8f0fe; color: #3b5998; border-radius: 12px; padding: 2px 10px; font-size: 12px; font-weight: 600; white-space: nowrap; }
   .job-badge.ember { background: #fce8e8; color: #c0392b; }
+  .col-notes { font-size: 12px; color: #555; white-space: pre-wrap; }
   .col-due { font-size: 13px; }
   .col-due.overdue { color: #e53e3e; font-weight: 600; }
   .col-added { font-size: 12px; color: #aaa; white-space: nowrap; }
@@ -86,6 +88,7 @@
   @media (min-width: 701px) {
     .page { max-width: 1600px; padding: 24px 32px; }
     .tasks-table .col-task { min-width: 180px; }
+    .tasks-table .col-notes { min-width: 150px; }
     .tasks-table th, .tasks-table td { padding-left: 8px; padding-right: 8px; }
   }
   /* Full side margins only once the table has room for them */
@@ -258,6 +261,7 @@
   <div class="nav-logo">🔥 Fireside</div>
   <div class="nav-tab active" data-page="tasks" onclick="showPage('tasks', this)">Tasks</div>
   <div class="nav-tab" data-page="trades" onclick="showPage('trades', this)">Trades</div>
+  <div class="nav-tab" data-page="subs" onclick="showPage('subs', this)">Subcontractors</div>
   <div class="nav-tab" data-page="contacts" onclick="showPage('contacts', this)">Contacts</div>
   <div class="nav-tab" data-page="views" onclick="showPage('views', this)">Saved Views</div>
 </div>
@@ -298,9 +302,18 @@
         <input type="text" id="tf-task" placeholder="What needs doing...">
       </div>
       <div class="form-field">
+        <label>Notes</label>
+        <input type="text" id="tf-notes" placeholder="Optional">
+      </div>
+      <div class="form-field">
         <label>Contact</label>
         <input list="contact-list" id="tf-contact" placeholder="Type or pick..." autocomplete="off">
         <datalist id="contact-list"></datalist>
+      </div>
+      <div class="form-field">
+        <label>Subcontractor</label>
+        <input list="sub-list" id="tf-sub" placeholder="Type or pick..." autocomplete="off">
+        <datalist id="sub-list"></datalist>
       </div>
       <div class="form-field">
         <label>Due date</label>
@@ -381,7 +394,7 @@
     </div>
     <div class="search-row">
       <span class="search-icon">🔍</span>
-      <input type="text" id="f-search" class="search-input" placeholder="Search tasks, jobs, types, trades, locations, rooms, contacts…" autocomplete="off" oninput="renderTasks()">
+      <input type="text" id="f-search" class="search-input" placeholder="Search tasks, notes, jobs, types, trades, locations, rooms, contacts, subcontractors…" autocomplete="off" oninput="renderTasks()">
       <button class="search-clear" id="search-clear" onclick="clearSearch()" title="Clear search">×</button>
     </div>
     </div>
@@ -402,7 +415,9 @@
           <th class="sortable" data-sort="location"  onclick="sortByColumn('location', event)">Location/ Level<span class="sort-level"></span><span class="sort-arrow">▼</span></th>
           <th class="sortable" data-sort="room"      onclick="sortByColumn('room', event)">Room<span class="sort-level"></span><span class="sort-arrow">▼</span></th>
           <th class="sortable" data-sort="task"      onclick="sortByColumn('task', event)">Task<span class="sort-level"></span><span class="sort-arrow">▼</span></th>
+          <th class="sortable" data-sort="notes"     onclick="sortByColumn('notes', event)">Notes<span class="sort-level"></span><span class="sort-arrow">▼</span></th>
           <th class="sortable" data-sort="contact"   onclick="sortByColumn('contact', event)">Contact<span class="sort-level"></span><span class="sort-arrow">▼</span></th>
+          <th class="sortable" data-sort="subcontractor" onclick="sortByColumn('subcontractor', event)">Subcontractor<span class="sort-level"></span><span class="sort-arrow">▼</span></th>
           <th class="sortable" data-sort="due"       onclick="sortByColumn('due', event)">Due<span class="sort-level"></span><span class="sort-arrow">▼</span></th>
           <th class="sortable" data-sort="added"     onclick="sortByColumn('added', event)">Added<span class="sort-level"></span><span class="sort-arrow">▼</span></th>
           <th class="sortable" data-sort="updated"   onclick="sortByColumn('updated', event)">Updated<span class="sort-level"></span><span class="sort-arrow">▼</span></th>
@@ -446,9 +461,17 @@
         <label>Task</label>
         <input type="text" id="e-task" placeholder="What needs doing...">
       </div>
+      <div class="form-field full">
+        <label>Notes</label>
+        <textarea id="e-notes" rows="3" placeholder="Optional"></textarea>
+      </div>
       <div class="form-field">
         <label>Contact</label>
         <input list="contact-list" id="e-contact" placeholder="Type or pick..." autocomplete="off">
+      </div>
+      <div class="form-field">
+        <label>Subcontractor</label>
+        <input list="sub-list" id="e-sub" placeholder="Type or pick..." autocomplete="off">
       </div>
       <div class="form-field">
         <label>Due date</label>
@@ -465,6 +488,25 @@
 <!-- TRADES PAGE -->
 <div class="page" id="page-trades">
   <div class="trade-list-wrap" id="trades-panel"></div>
+</div>
+
+<!-- SUBCONTRACTORS PAGE -->
+<div class="page" id="page-subs">
+  <div class="card">
+    <div class="card-title">Add Subcontractor</div>
+    <div class="contacts-add-form">
+      <div class="form-field"><label>Company / Name</label><input type="text" id="s-name" placeholder="Company name"
+        onkeydown="if(event.key==='Enter')addSub()"></div>
+      <div class="form-field"><label>Trade</label>
+        <input list="trade-list" id="s-trade" placeholder="Type or pick..." autocomplete="off"
+          onkeydown="if(event.key==='Enter')addSub()">
+      </div>
+      <div class="form-field"><label>Phone / Email</label><input type="text" id="s-detail" placeholder="Optional"
+        onkeydown="if(event.key==='Enter')addSub()"></div>
+      <button class="btn-sm" onclick="addSub()">+ Add Subcontractor</button>
+    </div>
+  </div>
+  <div class="contacts-grid" id="subs-grid"></div>
 </div>
 
 <!-- CONTACTS PAGE -->
@@ -648,11 +690,19 @@ function saveTask(t, deleted = false) {
   queueWrite('task:' + t.id, () => _sb.from('tasks').upsert(row));
 }
 
+// The tasks table only takes subcontractor and notes once
+// supabase/add_subcontractor_and_notes.sql has been run. Until the server shows
+// a column, leave it out of saves so they keep working instead of being rejected.
+let hasSubColumn = false;
+let hasNotesColumn = false;
+
 function taskToRow(t) {
   return {
     id: t.id, jobs: t.jobs || [], type: t.type || '', trade: t.trade || '',
     location: t.location || '', room: t.room || '', task: t.task || '',
     contact: t.contact || '', due: t.due || null, status: t.status || 'open',
+    ...(hasSubColumn ? { subcontractor: t.subcontractor || '' } : {}),
+    ...(hasNotesColumn ? { notes: t.notes || '' } : {}),
     started_at: t.startedAt || null, completed_at: t.completedAt || null,
     added_at: t.added || new Date().toISOString(), updated_at: t.updatedAt || null,
   };
@@ -662,7 +712,7 @@ function rowToTask(r) {
   return {
     id: Number(r.id), jobs: r.jobs || [], type: r.type, trade: r.trade,
     location: r.location, room: r.room, task: r.task, contact: r.contact,
-    due: r.due || '', status: r.status,
+    subcontractor: r.subcontractor || '', notes: r.notes || '', due: r.due || '', status: r.status,
     startedAt: r.started_at, completedAt: r.completed_at,
     added: r.added_at, updatedAt: r.updated_at,
   };
@@ -708,6 +758,7 @@ async function loadTasks() {
       .eq('deleted', false).order('id', { ascending: false })
       .range(from, from + PAGE - 1);
     if (error) throw error;
+    if (data.length) { hasSubColumn = 'subcontractor' in data[0]; hasNotesColumn = 'notes' in data[0]; }
     rows.push(...data);
     if (data.length < PAGE) break;
   }
@@ -833,6 +884,7 @@ let tasks      = [];
 let contacts   = null;
 let tradeTasks = {};
 let trades     = PRESET_TRADES;
+let subs       = [];
 let types      = PRESET_TYPES;
 let views      = [];
 // The view the Tasks panel is currently showing, or null once it's been tweaked.
@@ -849,6 +901,7 @@ function applyState(remote) {
   contacts = get('fs_contacts', null);
   tradeTasks = get('fs_trade_tasks', {});
   trades   = get('fs_trades', PRESET_TRADES);
+  subs     = get('fs_subs',   []);
   types    = get('fs_types',  PRESET_TYPES);
   views    = get('fs_views',  []);
 
@@ -862,6 +915,7 @@ function renderAll() {
   populateJobDatalist();
   populateContactDatalist();
   populateTradeDatalist();
+  populateSubDatalist();
   populateTypeDatalist();
   populateLocationDatalist();
   populateRoomDatalist();
@@ -873,6 +927,7 @@ function renderAll() {
   renderTasks();
   renderContacts();
   renderTradeList();
+  renderSubs();
   renderViews();
 }
 
@@ -899,7 +954,7 @@ async function init() {
     if (e.target === this) closeSaveViewModal();
   });
 
-  ['tf-job','tf-type','tf-trade','tf-location','tf-room','tf-task','tf-contact','tf-due'].forEach(id => {
+  ['tf-job','tf-type','tf-trade','tf-location','tf-room','tf-task','tf-notes','tf-contact','tf-sub','tf-due'].forEach(id => {
     document.getElementById(id).addEventListener('keydown', e => { if(e.key==='Enter') addTask(); });
   });
 }
@@ -1136,25 +1191,28 @@ function addTask() {
   const location= document.getElementById('tf-location').value.trim();
   const room    = document.getElementById('tf-room').value.trim();
   const task    = document.getElementById('tf-task').value.trim();
+  const notes   = document.getElementById('tf-notes').value.trim();
   const contact = document.getElementById('tf-contact').value.trim();
+  const subcontractor = document.getElementById('tf-sub').value.trim();
   const due     = document.getElementById('tf-due').value;
 
   // also grab whatever is typed in job field that hasn't been tagged yet
   const jobInp = document.getElementById('tf-job').value.trim();
   if (jobInp && !pendingJobs.includes(jobInp)) pendingJobs.push(jobInp);
 
-  if (!task && !pendingJobs.length && !contact && !trade && !type && !location && !room && !due) return;
+  if (!task && !notes && !pendingJobs.length && !contact && !subcontractor && !trade && !type && !location && !room && !due) return;
 
   if (trade) ensureTrade(trade);
   if (type)  ensureType(type);
-  tasks.unshift({ id: Date.now(), jobs: [...pendingJobs], type, trade, location, room, task, contact, due,
+  if (subcontractor) ensureSub(subcontractor, trade);
+  tasks.unshift({ id: Date.now(), jobs: [...pendingJobs], type, trade, location, room, task, notes, contact, subcontractor, due,
     status: 'open', startedAt: null, completedAt: null, updatedAt: null,
     added: new Date().toISOString() });
   saveTask(tasks[0]);
 
   pendingJobs = [];
   document.getElementById('job-tags-form').innerHTML = '';
-  ['tf-job','tf-type','tf-trade','tf-location','tf-room','tf-task','tf-contact','tf-due'].forEach(id => {
+  ['tf-job','tf-type','tf-trade','tf-location','tf-room','tf-task','tf-notes','tf-contact','tf-sub','tf-due'].forEach(id => {
     document.getElementById(id).value = '';
   });
   populateLocationDatalist();
@@ -1210,7 +1268,7 @@ function daysTracked(t) {
 function matchesSearch(t, terms) {
   if (!terms.length) return true;
   const hay = [
-    t.task, t.type, t.trade, t.location, t.room, t.contact,
+    t.task, t.notes, t.type, t.trade, t.location, t.room, t.contact, t.subcontractor,
     ...(t.jobs || [])
   ].filter(Boolean).join(' ').toLowerCase();
   return terms.every(term => hay.includes(term));
@@ -1232,11 +1290,11 @@ function clearSearch() {
 // dates read best newest-first; text reads best A–Z
 const SORT_DEFAULT_ORDER = { added: 'desc', updated: 'desc', completed: 'desc', due: 'asc', status: 'asc',
                              job: 'asc', type: 'asc', trade: 'asc', location: 'asc',
-                             room: 'asc', task: 'asc', contact: 'asc' };
+                             room: 'asc', task: 'asc', notes: 'asc', contact: 'asc', subcontractor: 'asc' };
 
 const SORT_LABELS = { status: 'Status', job: 'Job', type: 'Type', trade: 'Trade',
-                      location: 'Location/ Level', room: 'Room', task: 'Task',
-                      contact: 'Contact', due: 'Due date', added: 'Date added',
+                      location: 'Location/ Level', room: 'Room', task: 'Task', notes: 'Notes',
+                      contact: 'Contact', subcontractor: 'Subcontractor', due: 'Due date', added: 'Date added',
                       updated: 'Date updated', completed: 'Date completed' };
 
 // Levels apply in order: level 1 decides, level 2 breaks its ties, and so on.
@@ -1305,7 +1363,7 @@ function sortByColumn(key, ev) {
 }
 
 // Field order for the level dropdowns — roughly how the columns read across.
-const SORT_FIELDS = ['status','job','type','trade','location','room','task','contact','due','added','updated','completed'];
+const SORT_FIELDS = ['status','job','type','trade','location','room','task','notes','contact','subcontractor','due','added','updated','completed'];
 const DATE_FIELDS = ['due','added','updated','completed'];
 
 // "A–Z" means more than "ascending" does when you're staring at a date column.
@@ -1466,7 +1524,9 @@ function renderTasks() {
       <td>${t.location ? esc(t.location) : '<span style="color:#ccc">—</span>'}</td>
       <td>${t.room ? esc(t.room) : '<span style="color:#ccc">—</span>'}</td>
       <td class="col-task">${esc(t.task)}</td>
+      <td class="col-notes">${t.notes ? esc(t.notes) : '<span style="color:#ccc">—</span>'}</td>
       <td>${esc(t.contact) || '<span style="color:#ccc">—</span>'}</td>
+      <td>${esc(t.subcontractor) || '<span style="color:#ccc">—</span>'}</td>
       <td class="col-due ${overdue}">${t.due ? fmtDate(t.due) : '<span style="color:#ccc">—</span>'}</td>
       <td class="col-added">${fmtDateTime(t.added)}</td>
       <td class="col-updated">${t.updatedAt ? fmtDateTime(t.updatedAt) : '<span style="color:#ccc">—</span>'}</td>
@@ -1719,6 +1779,67 @@ function renderTradeList() {
     </div>`;
 }
 
+// ─── SUBCONTRACTORS ───────────────────────────────────────────────────────────
+
+function populateSubDatalist() {
+  document.getElementById('sub-list').innerHTML =
+    subs.map(s => `<option value="${esc(s.name)}">`).join('');
+}
+
+// A name typed on a task that isn't on the list yet gets added to it.
+function ensureSub(name, trade) {
+  if (!name || subs.some(s => s.name.toLowerCase() === name.toLowerCase())) return;
+  subs.push({ id: 's_' + Date.now(), name, trade: trade || '', detail: '' });
+  save('fs_subs', subs);
+  populateSubDatalist();
+  renderSubs();
+}
+
+function addSub() {
+  const name   = document.getElementById('s-name').value.trim();
+  const trade  = document.getElementById('s-trade').value.trim();
+  const detail = document.getElementById('s-detail').value.trim();
+  if (!name || subs.some(s => s.name.toLowerCase() === name.toLowerCase())) return;
+  if (trade) ensureTrade(trade);
+  subs.push({ id: 's_' + Date.now(), name, trade, detail });
+  save('fs_subs', subs);
+  ['s-name','s-trade','s-detail'].forEach(id => document.getElementById(id).value = '');
+  populateSubDatalist();
+  renderSubs();
+}
+
+function deleteSub(id) {
+  subs = subs.filter(s => s.id !== id);
+  save('fs_subs', subs);
+  populateSubDatalist();
+  renderSubs();
+}
+
+// Grouped by trade, A-Z, with anything untagged at the end.
+function renderSubs() {
+  const grid = document.getElementById('subs-grid');
+  if (!subs.length) {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1">No subcontractors yet.</div>';
+    return;
+  }
+  const byTrade = {};
+  subs.forEach(s => (byTrade[s.trade || ''] = byTrade[s.trade || ''] || []).push(s));
+  const keys = Object.keys(byTrade).sort((a, b) => !a ? 1 : !b ? -1 : a.localeCompare(b));
+  grid.innerHTML = keys.map(trade => `
+    <div style="grid-column:1/-1;font-size:11px;font-weight:700;letter-spacing:1.2px;color:#aaa;text-transform:uppercase;padding-top:8px">${esc(trade || 'No trade')}</div>
+    ${byTrade[trade].sort((a, b) => a.name.localeCompare(b.name)).map(s => `
+    <div class="contact-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div class="contact-name">${esc(s.name)}</div>
+        ${s.trade ? `<span style="display:inline-block;border-radius:10px;padding:2px 9px;font-size:11px;white-space:nowrap;background:#f0f7ee;color:#2d6a4f">${esc(s.trade)}</span>` : ''}
+      </div>
+      ${s.detail ? `<div class="contact-detail">${esc(s.detail)}</div>` : ''}
+      <div class="contact-actions">
+        <button class="btn-sm danger" style="padding:4px 10px;font-size:12px" onclick="deleteSub('${s.id}')">Remove</button>
+      </div>
+    </div>`).join('')}`).join('');
+}
+
 // ─── CONTACTS ─────────────────────────────────────────────────────────────────
 
 function addContact() {
@@ -1833,7 +1954,9 @@ function openEditModal(id) {
   editingId = id;
   editPendingJobs = [...(t.jobs || [])];
   document.getElementById('e-task').value    = t.task || '';
+  document.getElementById('e-notes').value   = t.notes || '';
   document.getElementById('e-contact').value = t.contact || '';
+  document.getElementById('e-sub').value     = t.subcontractor || '';
   document.getElementById('e-type').value    = t.type || '';
   document.getElementById('e-trade').value   = t.trade || '';
   document.getElementById('e-location').value= t.location || '';
@@ -1900,7 +2023,10 @@ function saveEdit() {
   t.location= document.getElementById('e-location').value.trim();
   t.room    = document.getElementById('e-room').value.trim();
   t.task    = document.getElementById('e-task').value.trim();
+  t.notes   = document.getElementById('e-notes').value.trim();
   t.contact = document.getElementById('e-contact').value.trim();
+  t.subcontractor = document.getElementById('e-sub').value.trim();
+  if (t.subcontractor) ensureSub(t.subcontractor, trade);
   t.due     = document.getElementById('e-due').value;
   t.updatedAt = new Date().toISOString();
   saveTask(t);
@@ -1931,7 +2057,9 @@ function exportPDF() {
       <td style="padding:6px 10px;border:1px solid #ccc;white-space:nowrap">${esc(t.location)||'—'}</td>
       <td style="padding:6px 10px;border:1px solid #ccc;white-space:nowrap">${esc(t.room)||'—'}</td>
       <td style="padding:6px 10px;border:1px solid #ccc">${esc(t.task)||'—'}</td>
+      <td style="padding:6px 10px;border:1px solid #ccc;white-space:pre-wrap">${esc(t.notes)||'—'}</td>
       <td style="padding:6px 10px;border:1px solid #ccc;white-space:nowrap">${esc(t.contact)||'—'}</td>
+      <td style="padding:6px 10px;border:1px solid #ccc;white-space:nowrap">${esc(t.subcontractor)||'—'}</td>
       <td style="padding:6px 10px;border:1px solid #ccc;white-space:nowrap">${t.due ? fmtDate(t.due) : '—'}</td>
       <td style="padding:6px 10px;border:1px solid #ccc;white-space:nowrap">${statusLabel(t.status)}</td>
     </tr>`;
@@ -1956,7 +2084,7 @@ function exportPDF() {
   <table>
     <thead><tr>
       <th style="width:22px"></th>
-      <th>Job</th><th>Type</th><th>Trade</th><th>Location/ Level</th><th>Room</th><th>Task</th><th>Contact</th><th>Due</th><th>Status</th>
+      <th>Job</th><th>Type</th><th>Trade</th><th>Location/ Level</th><th>Room</th><th>Task</th><th>Notes</th><th>Contact</th><th>Subcontractor</th><th>Due</th><th>Status</th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>
